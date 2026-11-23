@@ -1,425 +1,47 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>لوحة إدارة REAL VOICE</title>
-  <style>
-    :root{
-      --bg:#0b0d17; --card:#131729; --card2:#1a2038; --line:rgba(255,255,255,.11);
-      --text:#f5f7ff; --muted:#9aa4c7; --accent:#7c3aed; --accent2:#db2777;
-      --ok:#16a34a; --danger:#dc2626; --gold:#f59e0b; --r:16px;
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh}
-    .hidden{display:none!important}
-    .wrap{max-width:980px;margin:0 auto;padding:14px}
-    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;flex-wrap:wrap}
-    .brand{display:flex;align-items:center;gap:10px}
-    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:900}
-    .btn{border:0;border-radius:12px;padding:9px 13px;font-weight:800;font-size:13px;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}
-    .btn.sm{padding:6px 10px;font-size:11.5px;border-radius:10px}
-    .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
-    .btn.ok{background:var(--ok)}
-    .btn.red{background:var(--danger)}
-    .btn.gold{background:linear-gradient(135deg,#d97706,var(--gold));color:#111827}
-    .login-box{max-width:430px;margin:50px auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;text-align:center}
-    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
-    .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
-    .stat b{display:block;font-size:20px;color:#c4b5fd}
-    .stat span{font-size:12px;color:var(--muted)}
-    .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
-    .tab{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
-    .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
-    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
-    .search{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);margin-bottom:12px;font-size:13.5px}
-    .list{display:flex;flex-direction:column;gap:9px}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);flex-wrap:wrap}
-    .name{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .meta{font-size:12px;color:var(--muted);margin-top:2px}
-    .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08)}
-    .tag.ok{background:rgba(22,163,74,.2);color:#4ade80}
-    .tag.bad{background:rgba(220,38,38,.2);color:#fca5a5}
-    .tag.gold{background:rgba(245,158,11,.2);color:#fbbf24}
-    .acts{display:flex;gap:6px;flex-wrap:wrap}
-    .notice{padding:10px 12px;border-radius:12px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.35);font-size:12.5px;margin-bottom:12px;line-height:1.5}
-    .empty{text-align:center;color:var(--muted);padding:24px;font-size:13.5px}
-    #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;border:1px solid rgba(255,255,255,.18);padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;z-index:999;opacity:0;pointer-events:none;transition:opacity .2s}
-    #toast.show{opacity:1}
-  </style>
-</head>
-<body>
-  <div id="login-view" class="wrap">
-    <div class="login-box">
-      <div class="logo" style="margin:0 auto 12px">🛡️</div>
-      <h2 style="margin:0 0 8px">لوحة إدارة REAL VOICE</h2>
-      <p class="meta" style="margin:0 0 16px">سجّل الدخول بحساب Google المعتمد كمشرف للتحكم في المستخدمين والغرف والهدايا والبلاغات.</p>
-      <div id="adm-login-error" class="notice hidden" style="background:rgba(220,38,38,.18);border-color:rgba(220,38,38,.45);color:#fecaca"></div>
-      <button class="btn" id="adm-google-login" style="width:100%" type="button">تسجيل الدخول بحساب Google</button>
-    </div>
-  </div>
-
-  <div id="denied-view" class="wrap hidden">
-    <div class="login-box">
-      <h3 style="margin:0 0 8px;color:#fca5a5">⛔ صلاحية الإدارة غير مفعّلة</h3>
-      <p class="meta" id="denied-info" style="margin:0 0 14px">هذا الحساب لا يملك صلاحية <code>isAdmin</code> في قاعدة البيانات.</p>
-      <button class="btn ghost" id="adm-switch-acc" type="button">تسجيل الخروج / تغيير الحساب</button>
-    </div>
-  </div>
-
-  <div id="dash-view" class="wrap hidden">
-    <div class="top">
-      <div class="brand">
-        <div class="logo">🛡️</div>
-        <div>
-          <div style="font-weight:900;font-size:15px">لوحة إدارة REAL VOICE</div>
-          <div class="meta" id="adm-user-label">المشرف</div>
-        </div>
-      </div>
-      <div class="acts">
-        <button class="btn sm ghost" id="adm-refresh" type="button">↻ تحديث</button>
-        <button class="btn sm ghost" id="adm-logout" type="button">خروج</button>
-      </div>
-    </div>
-
-    <div class="stats">
-      <div class="stat"><b id="st-users">0</b><span>إجمالي المستخدمين</span></div>
-      <div class="stat"><b id="st-rooms">0</b><span>الغرف النشطة</span></div>
-      <div class="stat"><b id="st-reports">0</b><span>البلاغات المفتوحة</span></div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" data-tab="users" type="button">👥 المستخدمون</button>
-      <button class="tab" data-tab="rooms" type="button">🎙️ الغرف</button>
-      <button class="tab" data-tab="gifts" type="button">🎁 الهدايا</button>
-      <button class="tab" data-tab="reports" type="button">🚩 البلاغات</button>
-    </div>
-
-    <div id="tab-users" class="panel">
-      <div class="notice">إدارة الحسابات: حظر/فك حظر، توثيق الحساب، منح VIP، أو تعديل صلاحية الإدارة.</div>
-      <input id="u-search" class="search" placeholder="ابحث بالاسم أو رقم ID أو UID..." />
-      <div id="u-list" class="list"></div>
-    </div>
-
-    <div id="tab-rooms" class="panel hidden">
-      <div class="notice">إدارة الغرف: قفل/فتح الغرفة، ترتيب الأولوية، أو حذف غرفة مخالفة.</div>
-      <div id="r-list" class="list"></div>
-    </div>
-
-    <div id="tab-gifts" class="panel hidden">
-      <div class="notice">إدارة الهدايا: إضافة هدية جديدة أو تعديل السعر وحالة التفعيل.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <input id="g-emoji" class="search" placeholder="الإيموجي مثل 💎" style="width:120px;margin:0" />
-        <input id="g-name" class="search" placeholder="اسم الهدية" style="flex:1;min-width:140px;margin:0" />
-        <input id="g-price" class="search" type="number" placeholder="السعر" style="width:110px;margin:0" />
-        <button class="btn sm ok" id="g-add" type="button">+ إضافة هدية</button>
-      </div>
-      <div id="g-list" class="list"></div>
-    </div>
-
-    <div id="tab-reports" class="panel hidden">
-      <div id="rep-list" class="list"></div>
-    </div>
-  </div>
-
-  <div id="toast"></div>
-
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script>
-    (function () {
-      "use strict";
-
-      var firebaseConfig = {
-        apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
-        authDomain: "real-voice-aec71.firebaseapp.com",
-        databaseURL: "https://real-voice-aec71-default-rtdb.firebaseio.com",
-        projectId: "real-voice-aec71",
-        storageBucket: "real-voice-aec71.firebasestorage.app",
-        messagingSenderId: "1051527775983",
-        appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
-      };
-
-      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
-      var auth = firebase.auth(app);
-      var db = firebase.database(app);
-
-      var state = {
-        me: null,
-        tab: "users",
-        users: [],
-        rooms: [],
-        gifts: [],
-        reports: []
-      };
-
-      function $(id) { return document.getElementById(id); }
-      function esc(s) {
-        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-        });
-      }
-      function toast(msg) {
-        var t = $("toast");
-        if (!t) return;
-        t.textContent = msg;
-        t.classList.add("show");
-        setTimeout(function () { t.classList.remove("show"); }, 2400);
-      }
-      function setLoginError(msg) {
-        var box = $("adm-login-error");
-        if (!box) return;
-        if (msg) { box.textContent = msg; box.classList.remove("hidden"); }
-        else { box.textContent = ""; box.classList.add("hidden"); }
-      }
-
-      function renderStats() {
-        $("st-users").textContent = String(state.users.length);
-        $("st-rooms").textContent = String(state.rooms.length);
-        var openReps = state.reports.filter(function (r) { return r.status !== "closed"; }).length;
-        $("st-reports").textContent = String(openReps);
-      }
-
-      function renderUsers() {
-        var q = (($("u-search") && $("u-search").value) || "").trim().toLowerCase();
-        var list = state.users.filter(function (u) {
-          if (!q) return true;
-          return String(u.name || "").toLowerCase().indexOf(q) >= 0 ||
-            String(u.specialId || "").toLowerCase().indexOf(q) >= 0 ||
-            String(u.id || "").toLowerCase().indexOf(q) >= 0;
-        });
-        $("u-list").innerHTML = list.length ? list.map(function (u) {
-          var banned = !!u.banned;
-          var verified = !!u.verified;
-          var vip = Number(u.vip || 0);
-          return '<div class="row">' +
-            '<div>' +
-              '<div class="name">' + esc(u.name || "مستخدم") +
-                ' <span class="tag">ID: ' + esc(u.specialId || "—") + '</span>' +
-                (verified ? ' <span class="tag ok">✓ موثق</span>' : '') +
-                (vip > 0 ? ' <span class="tag gold">VIP ' + vip + '</span>' : '') +
-                (banned ? ' <span class="tag bad">محظور</span>' : '') +
-              '</div>' +
-              '<div class="meta">UID: ' + esc(u.id) + '</div>' +
-            '</div>' +
-            '<div class="acts">' +
-              '<button class="btn sm ' + (banned ? "ok" : "red") + '" data-ub="' + esc(u.id) + '" data-val="' + (!banned) + '" type="button">' + (banned ? "فك الحظر" : "حظر") + '</button>' +
-              '<button class="btn sm ghost" data-uv="' + esc(u.id) + '" data-val="' + (!verified) + '" type="button">' + (verified ? "إلغاء التوثيق" : "توثيق") + '</button>' +
-              '<button class="btn sm gold" data-uvip="' + esc(u.id) + '" type="button">VIP</button>' +
-            '</div>' +
-          '</div>';
-        }).join("") : '<div class="empty">لا يوجد مستخدمون</div>';
-      }
-
-      function renderRooms() {
-        $("r-list").innerHTML = state.rooms.length ? state.rooms.map(function (r) {
-          var locked = !!r.locked;
-          return '<div class="row">' +
-            '<div>' +
-              '<div class="name">' + esc(r.name || "غرفة") + ' <span class="tag">أولوية: ' + Number(r.adminOrder || 1000) + '</span>' + (locked ? ' <span class="tag bad">مقفلة</span>' : '') + '</div>' +
-              '<div class="meta">ID الغرفة: ' + esc(r.id) + ' • المالك: ' + esc(r.owner || "—") + '</div>' +
-            '</div>' +
-            '<div class="acts">' +
-              '<button class="btn sm ghost" data-rord="' + esc(r.id) + '" type="button">ترتيب</button>' +
-              '<button class="btn sm ' + (locked ? "ok" : "ghost") + '" data-rlock="' + esc(r.id) + '" data-val="' + (!locked) + '" type="button">' + (locked ? "فتح الغرفة" : "قفل الغرفة") + '</button>' +
-              '<button class="btn sm red" data-rdel="' + esc(r.id) + '" type="button">حذف</button>' +
-            '</div>' +
-          '</div>';
-        }).join("") : '<div class="empty">لا توجد غرف</div>';
-      }
-
-      function renderGifts() {
-        $("g-list").innerHTML = state.gifts.length ? state.gifts.map(function (g) {
-          return '<div class="row">' +
-            '<div>' +
-              '<div class="name">' + esc(g.e || "🎁") + ' ' + esc(g.n || "هدية") + ' <span class="tag gold">' + Number(g.p || 0) + ' 🪙</span></div>' +
-              '<div class="meta">ID: ' + esc(g.id) + '</div>' +
-            '</div>' +
-            '<div class="acts">' +
-              '<button class="btn sm red" data-gdel="' + esc(g.id) + '" type="button">حذف</button>' +
-            '</div>' +
-          '</div>';
-        }).join("") : '<div class="empty">لا توجد هدايا مضافة في قاعدة البيانات</div>';
-      }
-
-      function renderReports() {
-        $("rep-list").innerHTML = state.reports.length ? state.reports.map(function (rp) {
-          var closed = rp.status === "closed";
-          return '<div class="row">' +
-            '<div>' +
-              '<div class="name">بلاغ ضد: ' + esc(rp.targetName || rp.targetId) + ' <span class="tag ' + (closed ? "ok" : "bad") + '">' + (closed ? "مغلق" : "مفتوح") + '</span></div>' +
-              '<div class="meta">السبب: ' + esc(rp.reason || "—") + ' • المبلغ: ' + esc(rp.reporterName || rp.reporterId) + '</div>' +
-            '</div>' +
-            '<div class="acts">' +
-              (!closed ? '<button class="btn sm ok" data-repclose="' + esc(rp.id) + '" type="button">إغلاق البلاغ</button>' : '') +
-            '</div>' +
-          '</div>';
-        }).join("") : '<div class="empty">لا توجد بلاغات</div>';
-      }
-
-      async function loadAllAdminData() {
-        try {
-          var snaps = await Promise.all([
-            db.ref("publicProfiles").once("value"),
-            db.ref("rooms").once("value"),
-            db.ref("gifts").once("value"),
-            db.ref("reports").once("value")
-          ]);
-          var pVal = snaps[0].val() || {};
-          state.users = Object.keys(pVal).map(function (k) { return Object.assign({ id: k }, pVal[k]); });
-
-          var rVal = snaps[1].val() || {};
-          state.rooms = Object.keys(rVal).map(function (k) { return Object.assign({ id: k }, rVal[k]); });
-
-          var gVal = snaps[2].val() || {};
-          state.gifts = Object.keys(gVal).map(function (k) { return Object.assign({ id: k }, gVal[k]); });
-
-          var repVal = snaps[3].val() || {};
-          state.reports = Object.keys(repVal).map(function (k) { return Object.assign({ id: k }, repVal[k]); }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
-
-          renderStats();
-          renderUsers();
-          renderRooms();
-          renderGifts();
-          renderReports();
-        } catch (e) {
-          toast("تعذر تحميل بيانات الإدارة: " + (e.message || ""));
-        }
-      }
-
-      async function loginWithGoogle() {
-        setLoginError("");
-        try {
-          var provider = new firebase.auth.GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: "select_account" });
-          await auth.signInWithPopup(provider);
-        } catch (e) {
-          if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) {
-            var providerRedir = new firebase.auth.GoogleAuthProvider();
-            providerRedir.setCustomParameters({ prompt: "select_account" });
-            await auth.signInWithRedirect(providerRedir);
-            return;
-          }
-          setLoginError("تعذر تسجيل الدخول: " + (e && e.message ? e.message : "خطأ غير معروف"));
-        }
-      }
-
-      $("adm-google-login").onclick = loginWithGoogle;
-      $("adm-logout").onclick = function () { auth.signOut(); };
-      $("adm-switch-acc").onclick = function () { auth.signOut(); };
-      $("adm-refresh").onclick = loadAllAdminData;
-      if ($("u-search")) $("u-search").oninput = renderUsers;
-
-      document.querySelectorAll(".tabs .tab").forEach(function (t) {
-        t.onclick = function () {
-          state.tab = t.getAttribute("data-tab");
-          document.querySelectorAll(".tabs .tab").forEach(function (x) { x.classList.toggle("active", x === t); });
-          ["users", "rooms", "gifts", "reports"].forEach(function (sec) {
-            $("tab-" + sec).classList.toggle("hidden", state.tab !== sec);
-          });
-        };
-      });
-
-      $("g-add").onclick = async function () {
-        var em = ($("g-emoji").value || "").trim();
-        var nm = ($("g-name").value || "").trim();
-        var pr = Math.max(1, Number($("g-price").value || 0));
-        if (!em || !nm || !pr) { toast("أدخل الإيموجي والاسم والسعر"); return; }
-        var id = "g_" + Date.now().toString(36);
-        await db.ref("gifts/" + id).set({ id: id, e: em, n: nm, p: pr, vipMin: 0 });
-        $("g-emoji").value = ""; $("g-name").value = ""; $("g-price").value = "";
-        toast("تمت إضافة الهدية ✅");
-        loadAllAdminData();
-      };
-
-      document.addEventListener("click", async function (e) {
-        var b = e.target.closest("button");
-        if (!b) return;
-        if (b.hasAttribute("data-ub")) {
-          var uid = b.getAttribute("data-ub"), val = b.getAttribute("data-val") === "true";
-          await db.ref("users/" + uid + "/banned").set(val);
-          await db.ref("publicProfiles/" + uid + "/banned").set(val);
-          toast(val ? "تم حظر المستخدم" : "تم فك الحظر");
-          loadAllAdminData();
-        } else if (b.hasAttribute("data-uv")) {
-          var uidV = b.getAttribute("data-uv"), valV = b.getAttribute("data-val") === "true";
-          await db.ref("users/" + uidV + "/verified").set(valV);
-          await db.ref("publicProfiles/" + uidV + "/verified").set(valV);
-          toast("تم تحديث حالة التوثيق");
-          loadAllAdminData();
-        } else if (b.hasAttribute("data-uvip")) {
-          var uidVip = b.getAttribute("data-uvip");
-          var lv = prompt("أدخل مستوى VIP (0 - 3):", "1");
-          if (lv !== null) {
-            var numLv = Math.max(0, Math.min(3, Number(lv || 0)));
-            await db.ref("users/" + uidVip + "/vip").set(numLv);
-            await db.ref("publicProfiles/" + uidVip + "/vip").set(numLv);
-            toast("تم تحديث VIP إلى " + numLv);
-            loadAllAdminData();
-          }
-        } else if (b.hasAttribute("data-rord")) {
-          var ridO = b.getAttribute("data-rord");
-          var ord = prompt("أدخل رقم الأولوية (رقم أقل = أعلى):", "10");
-          if (ord !== null) {
-            await db.ref("rooms/" + ridO + "/adminOrder").set(Number(ord || 1000));
-            toast("تم تحديث ترتيب الغرفة");
-            loadAllAdminData();
-          }
-        } else if (b.hasAttribute("data-rlock")) {
-          var ridL = b.getAttribute("data-rlock"), valL = b.getAttribute("data-val") === "true";
-          await db.ref("rooms/" + ridL + "/locked").set(valL);
-          toast(valL ? "تم قفل الغرفة" : "تم فتح الغرفة");
-          loadAllAdminData();
-        } else if (b.hasAttribute("data-rdel")) {
-          var ridD = b.getAttribute("data-rdel");
-          await db.ref("rooms/" + ridD).remove();
-          toast("تم حذف الغرفة");
-          loadAllAdminData();
-        } else if (b.hasAttribute("data-gdel")) {
-          var gidD = b.getAttribute("data-gdel");
-          await db.ref("gifts/" + gidD).remove();
-          toast("تم حذف الهدية");
-          loadAllAdminData();
-        } else if (b.hasAttribute("data-repclose")) {
-          var repId = b.getAttribute("data-repclose");
-          await db.ref("reports/" + repId + "/status").set("closed");
-          toast("تم إغلاق البلاغ");
-          loadAllAdminData();
-        }
-      });
-
-      auth.onAuthStateChanged(async function (user) {
-        if (!user) {
-          state.me = null;
-          $("login-view").classList.remove("hidden");
-          $("denied-view").classList.add("hidden");
-          $("dash-view").classList.add("hidden");
-          return;
-        }
-        state.me = user;
-        try {
-          var snap = await db.ref("users/" + user.uid + "/isAdmin").once("value");
-          if (snap.val() === true) {
-            $("login-view").classList.add("hidden");
-            $("denied-view").classList.add("hidden");
-            $("dash-view").classList.remove("hidden");
-            $("adm-user-label").textContent = (user.displayName || user.email || user.uid);
-            loadAllAdminData();
-          } else {
-            $("login-view").classList.add("hidden");
-            $("dash-view").classList.add("hidden");
-            $("denied-view").classList.remove("hidden");
-            $("denied-info").textContent = "الحساب (" + (user.email || user.uid) + ") لا يملك صلاحية isAdmin في قاعدة البيانات.";
-          }
-        } catch (e) {
-          $("login-view").classList.add("hidden");
-          $("dash-view").classList.add("hidden");
-          $("denied-view").classList.remove("hidden");
-          $("denied-info").textContent = "تعذر التحقق من صلاحية الإدارة: " + (e.message || "");
-        }
-      });
-    })();
-  </script>
-</body>
-</html>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>إدارة REAL VOICE</title>
+<style>
+:root{--bg:#090b13;--card:#141a2a;--card2:#1c2438;--line:#2b3550;--txt:#f4f6ff;--muted:#9ba8c7;--gold:#f4b942;--purple:#7957ef;--red:#d94c61;--green:#20a878}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#1b1740 0,transparent 34%),var(--bg);color:var(--txt);font-family:system-ui,Tahoma,Arial}button,input,textarea,select{font:inherit}.wrap{max-width:1200px;margin:auto;padding:16px}.hidden{display:none!important}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;margin-bottom:14px}.login{max-width:420px;margin:9vh auto;text-align:center}.logo{font-size:32px}.muted{color:var(--muted);font-size:13px}.btn{border:0;border-radius:11px;padding:10px 14px;color:#fff;background:var(--purple);font-weight:800;cursor:pointer}.btn.gold{background:var(--gold);color:#17120a}.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.dark{background:var(--card2);border:1px solid var(--line)}.btn:disabled{opacity:.55}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:var(--card2);padding:13px;border-radius:13px;text-align:center}.stat b{display:block;font-size:23px;color:var(--gold)}.tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 12px}.tab{white-space:nowrap;background:var(--card2);border:1px solid var(--line);color:var(--muted);padding:9px 13px;border-radius:30px;cursor:pointer}.tab.active{background:var(--purple);color:white}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card2);padding:12px;border-radius:12px;margin:8px 0}.actions{display:flex;gap:7px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted)}input,textarea,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0e1422;color:var(--txt)}textarea{min-height:110px;resize:vertical}.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.notice{background:#262044;border:1px solid #4c3b8a;padding:11px;border-radius:11px;font-size:13px;line-height:1.6;margin-bottom:12px}.status{padding:9px;border-radius:9px;margin:8px 0;font-size:13px}.status.ok{background:#123c32}.status.err{background:#4b202a}.list{max-height:65vh;overflow:auto}.pill{font-size:11px;border-radius:30px;background:#303a55;padding:3px 8px}.empty{text-align:center;padding:25px;color:var(--muted)}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.form,.grid{grid-template-columns:1fr}.wrap{padding:10px}.card{padding:12px}}
+</style></head><body><div id="login" class="wrap"><div class="card login"><div class="logo">🛡️</div><h2>لوحة تحكم REAL VOICE</h2><p class="muted">تسجيل دخول المدير المعتمد</p><div id="loginMsg" class="status err hidden"></div><button class="btn gold" id="loginBtn">تسجيل الدخول بحساب Google</button></div></div>
+<div id="denied" class="wrap hidden"><div class="card login"><h2>غير مصرح</h2><p class="muted">هذا الحساب لا يملك صلاحية المدير.</p><button class="btn dark" id="switchBtn">تغيير الحساب</button></div></div>
+<main id="app" class="wrap hidden"><header class="card top"><div><h2 style="margin:0">🛡️ REAL VOICE <span class="pill">ADMIN</span></h2><div id="adminLabel" class="muted"></div></div><div class="actions"><button class="btn dark" id="refresh">تحديث</button><button class="btn red" id="logout">خروج</button></div></header>
+<div class="stats card"><div class="stat"><b id="countUsers">0</b><span class="muted">المستخدمون</span></div><div class="stat"><b id="countRooms">0</b><span class="muted">الغرف</span></div><div class="stat"><b id="countGifts">0</b><span class="muted">الهدايا الثابتة</span></div><div class="stat"><b id="countBoxes">0</b><span class="muted">صناديق الحظ</span></div></div>
+<nav class="tabs" id="tabs"><button class="tab active" data-tab="users">👥 المستخدمون</button><button class="tab" data-tab="wallet">🪙 العملات</button><button class="tab" data-tab="gifts">🎁 الهدايا الثابتة</button><button class="tab" data-tab="lucky">🎲 هدايا الحظ</button><button class="tab" data-tab="rooms">🎙️ الغرف</button><button class="tab" data-tab="settings">⚙️ الإعدادات</button><button class="tab" data-tab="notice">📢 الإشعارات</button><button class="tab" data-tab="logs">📜 السجلات</button></nav>
+<section class="card pane" id="pane-users"><h3>إدارة المستخدمين</h3><input id="userSearch" placeholder="ابحث بالاسم أو UID أو ID"><div id="usersList" class="list"></div></section>
+<section class="card pane hidden" id="pane-wallet"><h3>إرسال عملات لمستخدم</h3><div class="notice">الإضافة تتم من خلال Cloud Function محمية، ولا يتم تعديل رصيد المحفظة من المتصفح.</div><div class="form"><div class="field"><label>UID أو رقم ID</label><input id="coinTarget" placeholder="UID أو ID المكون من 7 أرقام"></div><div class="field"><label>عدد العملات</label><input id="coinAmount" type="number" min="1" max="10000000" placeholder="مثال: 5000"></div><div class="field"><label>سبب الإضافة</label><input id="coinReason" value="هدية من إدارة REAL VOICE"></div></div><button class="btn gold" id="grantCoins">إرسال العملات</button><div id="walletStatus"></div></section>
+<section class="card pane hidden" id="pane-gifts"><h3>إدارة الهدايا الثابتة</h3><div class="form"><div class="field"><label>معرّف الهدية</label><input id="giftId" placeholder="مثال rose"></div><div class="field"><label>الإيموجي</label><input id="giftEmoji" placeholder="🌹"></div><div class="field"><label>اسم الهدية</label><input id="giftName" placeholder="وردة"></div><div class="field"><label>السعر بالعملات</label><input id="giftPrice" type="number" min="0" value="25"></div><div class="field"><label>رابط صورة أو GIF</label><input id="giftImage" placeholder="https://..."></div><div class="field"><label>أقل مستوى VIP</label><input id="giftVip" type="number" min="0" value="0"></div></div><button class="btn gold" id="saveGift">حفظ / إضافة الهدية</button><div id="giftsList" class="list"></div></section>
+<section class="card pane hidden" id="pane-lucky"><h3>إدارة صناديق الحظ</h3><div class="notice">أدخل الجوائز بصيغة JSON. مجموع weight لكل الجوائز النشطة يجب أن يساوي 100 بالضبط. type المدعوم حالياً: coins أو frame أو badge أو vip أو gift (تُحفظ العناصر غير النقدية في inventory).</div><div class="form"><div class="field"><label>معرّف الصندوق</label><input id="boxId" placeholder="basic_box"></div><div class="field"><label>اسم الصندوق</label><input id="boxName" placeholder="صندوق الحظ العادي"></div><div class="field"><label>الإيموجي</label><input id="boxEmoji" value="🎁"></div><div class="field"><label>السعر</label><input id="boxPrice" type="number" min="0" value="100"></div></div><div class="field"><label>الجوائز واحتمالاتها (JSON)</label><textarea id="boxRewards">[
+ {"id":"coins_50","name":"50 عملة","type":"coins","value":50,"weight":60,"emoji":"🪙","active":true},
+ {"id":"coins_250","name":"250 عملة","type":"coins","value":250,"weight":30,"emoji":"💎","active":true},
+ {"id":"vip_badge","name":"شارة مميزة","type":"badge","value":1,"weight":10,"emoji":"👑","active":true}
+]</textarea></div><button class="btn gold" id="saveBox">حفظ / إضافة الصندوق</button><div id="luckyList" class="list"></div></section>
+<section class="card pane hidden" id="pane-rooms"><h3>إدارة الغرف</h3><div id="roomsList" class="list"></div></section>
+<section class="card pane hidden" id="pane-settings"><h3>إعدادات التطبيق</h3><div class="form"><div class="field"><label>اسم التطبيق</label><input id="appName" value="REAL VOICE"></div><div class="field"><label>إعلان أو تنبيه عام</label><input id="appNotice"></div><div class="field"><label>وضع الصيانة</label><select id="maintenance"><option value="false">متوقف</option><option value="true">مفعل</option></select></div></div><button class="btn gold" id="saveSettings">حفظ الإعدادات</button></section>
+<section class="card pane hidden" id="pane-notice"><h3>إرسال إشعار عام</h3><div class="field"><label>نص الإشعار</label><textarea id="noticeText" placeholder="اكتب الإعلان الذي سيظهر للمستخدمين"></textarea></div><button class="btn gold" id="sendNotice">إرسال للجميع</button><div id="noticeStatus"></div></section>
+<section class="card pane hidden" id="pane-logs"><h3>سجل عمليات المدير</h3><div id="logsList" class="list"></div></section></main><div id="toast" class="wrap"></div>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+(function(){'use strict';
+const CFG={apiKey:'AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4',authDomain:'real-voice-aec71.firebaseapp.com',databaseURL:'https://real-voice-aec71-default-rtdb.firebaseio.com',projectId:'real-voice-aec71',storageBucket:'real-voice-aec71.firebasestorage.app',messagingSenderId:'1051527775983',appId:'1:1051527775983:web:ae3794c162184fd56b7d1a'};
+const ADMIN_UID='MDdaKOJ4CLNrwRizr2jZUbHfGDb2', GRANT_URL='https://us-central1-real-voice-aec71.cloudfunctions.net/adminGrantCoins';
+const app=firebase.apps.length?firebase.app():firebase.initializeApp(CFG),auth=firebase.auth(app),db=firebase.database(app);let me=null,data={users:{},profiles:{},rooms:{},gifts:{},boxes:{},logs:{}};
+const $=id=>document.getElementById(id), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function status(id,msg,ok){const el=$(id);if(el){el.className='status '+(ok?'ok':'err');el.textContent=msg;}}
+function log(action,details){const ref=db.ref('adminLogs').push();return ref.set({action,details,adminUid:me.uid,adminEmail:me.email||'',createdAt:firebase.database.ServerValue.TIMESTAMP});}
+async function load(){const keys=['users','publicProfiles','rooms','gifts','luckyBoxes','adminLogs'];const s=await Promise.all(keys.map(k=>db.ref(k).once('value')));data={users:s[0].val()||{},profiles:s[1].val()||{},rooms:s[2].val()||{},gifts:s[3].val()||{},boxes:s[4].val()||{},logs:s[5].val()||{}};$('countUsers').textContent=Object.keys(data.profiles).length;$('countRooms').textContent=Object.keys(data.rooms).length;$('countGifts').textContent=Object.keys(data.gifts).length;$('countBoxes').textContent=Object.keys(data.boxes).length;renderUsers();renderGifts();renderBoxes();renderRooms();renderLogs();const cfg=(await db.ref('appSettings').once('value')).val()||{};$('appName').value=cfg.appName||'REAL VOICE';$('appNotice').value=cfg.notice||'';$('maintenance').value=String(!!cfg.maintenance);}
+function allUsers(){const ids=new Set([...Object.keys(data.users),...Object.keys(data.profiles)]);return [...ids].map(uid=>({uid,...(data.users[uid]||{}),...(data.profiles[uid]||{})}));}
+function renderUsers(){const q=($('userSearch').value||'').toLowerCase().trim();const rows=allUsers().filter(u=>[u.uid,u.name,u.specialId,u.email].some(x=>String(x||'').toLowerCase().includes(q))).slice(0,150);$('usersList').innerHTML=rows.length?rows.map(u=>`<div class="row"><div><b>${esc(u.name||'مستخدم')}</b> <span class="pill">ID ${esc(u.specialId||'—')}</span><div class="muted">${esc(u.uid)} • رصيد ${Number((u.coins||((data.users[u.uid]||{}).coins)||0))}</div></div><div class="actions"><button class="btn ${u.banned?'green':'red'}" data-ban="${esc(u.uid)}">${u.banned?'فك الحظر':'حظر'}</button><button class="btn dark" data-vip="${esc(u.uid)}">VIP</button><button class="btn dark" data-verify="${esc(u.uid)}">${u.verified?'إلغاء التوثيق':'توثيق'}</button></div></div>`).join(''):'<div class="empty">لا يوجد مستخدمون</div>';}
+function renderGifts(){$('giftsList').innerHTML=Object.keys(data.gifts).map(id=>{const g=data.gifts[id]||{};return `<div class="row"><div><b>${esc(g.e||'🎁')} ${esc(g.n||id)}</b><div class="muted">${Number(g.p||0)} 🪙 • ${g.active===false?'متوقفة':'مفعلة'} • ${esc(id)}</div></div><div class="actions"><button class="btn dark" data-editgift="${esc(id)}">تعديل</button><button class="btn red" data-delgift="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد هدايا</div>';}
+function renderBoxes(){$('luckyList').innerHTML=Object.keys(data.boxes).map(id=>{const b=data.boxes[id]||{};const rr=Array.isArray(b.rewards)?b.rewards:Object.values(b.rewards||{});return `<div class="row"><div><b>${esc(b.emoji||'🎁')} ${esc(b.name||id)}</b><div class="muted">${Number(b.price||0)} 🪙 • ${rr.length} جوائز • ${b.active===false?'متوقف':'مفعل'}</div></div><div class="actions"><button class="btn dark" data-editbox="${esc(id)}">تعديل</button><button class="btn red" data-delbox="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد صناديق حظ</div>';}
+function renderRooms(){$('roomsList').innerHTML=Object.keys(data.rooms).map(id=>{const r=data.rooms[id]||{};return `<div class="row"><div><b>${esc(r.name||'غرفة')}</b><div class="muted">${esc(id)} • ${r.locked?'مقفلة':'مفتوحة'}</div></div><div class="actions"><button class="btn dark" data-lock="${esc(id)}">${r.locked?'فتح':'قفل'}</button><button class="btn red" data-delroom="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد غرف</div>';}
+function renderLogs(){const rows=Object.entries(data.logs).map(([id,x])=>({id,...x})).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,100);$('logsList').innerHTML=rows.map(x=>`<div class="row"><div><b>${esc(x.action||'عملية')}</b><div class="muted">${esc(x.details||'')} • ${esc(x.adminEmail||x.adminUid||'')}</div></div><span class="pill">${x.createdAt?new Date(x.createdAt).toLocaleString('ar-EG'):''}</span></div>`).join('')||'<div class="empty">لا توجد عمليات مسجلة</div>';}
+$('loginBtn').onclick=async()=>{try{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});await auth.signInWithPopup(p);}catch(e){status('loginMsg',e.message||'فشل تسجيل الدخول');}};$('switchBtn').onclick=()=>auth.signOut();$('logout').onclick=()=>auth.signOut();$('refresh').onclick=()=>load().catch(e=>alert(e.message));$('userSearch').oninput=renderUsers;
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.pane').forEach(x=>x.classList.toggle('hidden',x.id!=='pane-'+b.dataset.tab));});
+$('grantCoins').onclick=async()=>{const targetUid=$('coinTarget').value.trim(),amount=Number($('coinAmount').value),reason=$('coinReason').value.trim();if(!targetUid||!Number.isSafeInteger(amount)||amount<1){status('walletStatus','أدخل UID/ID وعدداً صحيحاً موجباً.',false);return;}try{const token=await auth.currentUser.getIdToken(true);const res=await fetch(GRANT_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({targetId:targetUid,amount,reason})});const v=await res.json();if(!res.ok||!v.ok)throw new Error(v.error||'فشل إرسال العملات');status('walletStatus',`تمت إضافة ${v.added} عملة. الرصيد الجديد: ${v.balance}`,true);await log('grant_coins',`${v.targetUid}: +${v.added} — ${reason}`);await load();}catch(e){status('walletStatus',e.message||'تعذر الاتصال بخدمة العملات',false);}};
+$('saveGift').onclick=async()=>{const id=$('giftId').value.trim().replace(/[^A-Za-z0-9_-]/g,'_'),e=$('giftEmoji').value.trim()||'🎁',n=$('giftName').value.trim(),p=Number($('giftPrice').value);if(!id||!n||!Number.isSafeInteger(p)||p<0){alert('راجع معرّف الهدية والاسم والسعر');return;}const v={id,e,n,p,vipMin:Math.max(0,Number($('giftVip').value||0)),image:$('giftImage').value.trim(),active:true};await db.ref('gifts/'+id).set(v);await log('save_gift',id);await load();};
+$('saveBox').onclick=async()=>{const id=$('boxId').value.trim().replace(/[^A-Za-z0-9_-]/g,'_'),name=$('boxName').value.trim(),price=Number($('boxPrice').value);let rewards;try{rewards=JSON.parse($('boxRewards').value);}catch(e){alert('JSON الجوائز غير صحيح');return;}const sum=rewards.filter(r=>r.active!==false).reduce((s,r)=>s+Number(r.weight||0),0);if(!id||!name||!Number.isSafeInteger(price)||price<0||Math.abs(sum-100)>0.000001){alert('تأكد من البيانات وأن مجموع الاحتمالات النشطة = 100%');return;}if(!Array.isArray(rewards)||!rewards.length){alert('أدخل قائمة جوائز');return;}await db.ref('luckyBoxes/'+id).set({id,name,emoji:$('boxEmoji').value.trim()||'🎁',price,rewards,active:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});await log('save_lucky_box',id);await load();};
+$('saveSettings').onclick=async()=>{await db.ref('appSettings').update({appName:$('appName').value.trim()||'REAL VOICE',notice:$('appNotice').value.trim(),maintenance:$('maintenance').value==='true',updatedAt:firebase.database.ServerValue.TIMESTAMP});await log('update_settings','appSettings');alert('تم حفظ الإعدادات');};
+$('sendNotice').onclick=async()=>{const message=$('noticeText').value.trim();if(!message)return alert('اكتب نص الإشعار');const ref=db.ref('announcements').push();await ref.set({message,createdAt:firebase.database.ServerValue.TIMESTAMP,by:me.uid,active:true});await log('announcement',message);status('noticeStatus','تم نشر الإعلان في قاعدة البيانات. يجب أن تكون واجهة التطبيق مهيأة لقراءة announcements.',true);};
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{if(b.dataset.ban){const uid=b.dataset.ban,val=!(data.users[uid]||{}).banned;await db.ref().update({['users/'+uid+'/banned']:val,['publicProfiles/'+uid+'/banned']:val});await log('ban_user',uid+' '+val);}else if(b.dataset.verify){const uid=b.dataset.verify,val=!(data.users[uid]||{}).verified;await db.ref().update({['users/'+uid+'/verified']:val,['publicProfiles/'+uid+'/verified']:val});await log('verify_user',uid+' '+val);}else if(b.dataset.vip){const uid=b.dataset.vip,lv=prompt('مستوى VIP (0-10)','1');if(lv===null)return;const n=Math.max(0,Math.min(10,Number(lv)||0));await db.ref().update({['users/'+uid+'/vip']:n,['publicProfiles/'+uid+'/vip']:n});await log('set_vip',uid+' '+n);}else if(b.dataset.editgift){const g=data.gifts[b.dataset.editgift]||{};$('giftId').value=b.dataset.editgift;$('giftEmoji').value=g.e||'';$('giftName').value=g.n||'';$('giftPrice').value=g.p||0;$('giftImage').value=g.image||'';$('giftVip').value=g.vipMin||0;}else if(b.dataset.delgift){if(!confirm('حذف الهدية؟'))return;await db.ref('gifts/'+b.dataset.delgift).remove();await log('delete_gift',b.dataset.delgift);}else if(b.dataset.editbox){const id=b.dataset.editbox,x=data.boxes[id]||{};$('boxId').value=id;$('boxName').value=x.name||'';$('boxEmoji').value=x.emoji||'🎁';$('boxPrice').value=x.price||0;$('boxRewards').value=JSON.stringify(x.rewards||[],null,2);}else if(b.dataset.delbox){if(!confirm('حذف صندوق الحظ؟'))return;await db.ref('luckyBoxes/'+b.dataset.delbox).remove();await log('delete_lucky_box',b.dataset.delbox);}else if(b.dataset.lock){const id=b.dataset.lock,val=!(data.rooms[id]||{}).locked;await db.ref('rooms/'+id+'/locked').set(val);await log('room_lock',id+' '+val);}else if(b.dataset.delroom){if(!confirm('حذف الغرفة؟'))return;await db.ref('rooms/'+b.dataset.delroom).remove();await log('delete_room',b.dataset.delroom);}await load();}catch(err){alert(err.message||'حدث خطأ');}});
+auth.onAuthStateChanged(async user=>{me=user;if(!user){$('login').classList.remove('hidden');$('denied').classList.add('hidden');$('app').classList.add('hidden');return;}try{const s=await db.ref('users/'+user.uid+'/isAdmin').once('value');if(user.uid!==ADMIN_UID||s.val()!==true){$('login').classList.add('hidden');$('app').classList.add('hidden');$('denied').classList.remove('hidden');return;}$('login').classList.add('hidden');$('denied').classList.add('hidden');$('app').classList.remove('hidden');$('adminLabel').textContent=user.email||user.uid;await load();}catch(e){$('login').classList.add('hidden');$('denied').classList.remove('hidden');}});
+})();
+</script></body></html>
