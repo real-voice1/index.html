@@ -668,7 +668,7 @@
   }
 
   /* ========= الحالة والمزامنة ========= */
-  var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {}, synced: false, connected: true };
+  var cloud = { on: false, db: null, auth: null, usersMap: {}, roomMsgs: {}, synced: false, connected: true, lastInitError: "" };
   var S = null;
   var UI = {
     page: "home", filter: "all", rfilter: "mine", ftab: "friends", pftab: "overview",
@@ -997,17 +997,26 @@
   }
 
   function initCloud() {
-    if (!global.firebase || !FIREBASE_CONFIG.apiKey) return false;
+    cloud.lastInitError = "";
+    if (!global.firebase || !FIREBASE_CONFIG.apiKey) {
+      cloud.on = false;
+      cloud.lastInitError = "مكتبة Firebase أو مفتاح apiKey غير متوفر";
+      return false;
+    }
     try {
-      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-      cloud.db = firebase.database();
-      cloud.auth = firebase.auth();
+      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+      cloud.db = firebase.database(app);
+      cloud.auth = firebase.auth(app);
       cloud.on = true;
       cloud.db.ref(".info/connected").on("value", function (snap) {
         cloud.connected = !!snap.val();
       });
       return true;
-    } catch (e) { cloud.on = false; return false; }
+    } catch (e) {
+      cloud.on = false;
+      cloud.lastInitError = e && e.message ? e.message : "خطأ في تهيئة Firebase";
+      return false;
+    }
   }
 
   async function ensureSequentialSpecialId(userId) {
@@ -1424,11 +1433,16 @@
   async function signInWithGoogleApp() {
     setAuthError("");
     if (UI.authSigningIn) return;
+    if (!cloud.on || !cloud.auth) initCloud();
+    if (!cloud.on || !cloud.auth) {
+      setAuthError("تعذر تهيئة Firebase في الصفحة: " + (cloud.lastInitError || "تحقق من تحميل سكربتات Firebase"));
+      return;
+    }
+
     UI.authSigningIn = true;
     var btn = $("google-login-btn");
     if (btn) { btn.disabled = true; btn.textContent = "جاري الاتصال بـ Google..."; }
     try {
-      if (!cloud.on || !cloud.auth) throw new Error("Firebase غير متصل");
       var provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       var res = await cloud.auth.signInWithPopup(provider);
@@ -1436,12 +1450,24 @@
         await handleAuthenticatedUser(res.user);
       }
     } catch (e) {
-      if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) {
-        var providerRedir = new firebase.auth.GoogleAuthProvider();
-        await cloud.auth.signInWithRedirect(providerRedir);
-        return;
+      var code = e && e.code ? e.code : "";
+      if (
+        code === "auth/popup-blocked" ||
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        try {
+          var providerRedir = new firebase.auth.GoogleAuthProvider();
+          providerRedir.setCustomParameters({ prompt: "select_account" });
+          await cloud.auth.signInWithRedirect(providerRedir);
+          return;
+        } catch (redirErr) {
+          e = redirErr;
+          code = redirErr && redirErr.code ? redirErr.code : code;
+        }
       }
-      setAuthError("تعذر تسجيل الدخول بحساب Google: " + (e && e.message ? e.message : ""));
+      var msg = e && e.message ? e.message : "خطأ غير معروف";
+      setAuthError("تعذر تسجيل الدخول بحساب Google (" + (code || "error") + "): " + msg);
     } finally {
       UI.authSigningIn = false;
       if (btn) { btn.disabled = false; btn.textContent = "تسجيل الدخول بحساب Google"; }
@@ -1451,6 +1477,7 @@
   async function startWithoutGoogle() {
     setAuthError("");
     if (UI.authSigningIn) return;
+    if (!cloud.on || !cloud.auth) initCloud();
     UI.authSigningIn = true;
     var btn = $("guest-login-btn");
     if (btn) { btn.disabled = true; btn.textContent = "جاري بدء التطبيق..."; }
@@ -2654,351 +2681,351 @@
         (r.seats || []).forEach(function (st) { if (st && st.uid) seatUids[st.uid] = true; });
         r.listeners = Object.keys(lObj).filter(function (k) { return !!lObj[k] && !seatUids[k]; });
         if (UI.roomId === id) renderRoom();
-        if (UI.page === "home") renderHome();
       });
-      onDb("room", cloud.db.ref("roomMessages/" + id).limitToLast(100), "value", function (ms) {
-        var mv = ms.val() || {}, arr = Object.keys(mv).map(function (k) { return Object.assign({ key: k }, mv[k]); });
-        cloud.roomMsgs[id] = arr;
+
+      onDb("room", cloud.db.ref("roomMessages/" + id).limitToLast(60), "value", function (ms) {
         var r = getRoom(id);
-        if (r) r.msgs = arr;
-        renderRoomChat();
-        var last = arr[arr.length - 1];
-        if (last && last.joinUser && last.joinUser.uid !== S.me.id && (now() - (last.t || 0) < 8000)) showEntryBanner(last.joinUser);
-      });
-      onDb("room", cloud.db.ref("giftEvents/" + id).limitToLast(40), "value", function (giftSnap) {
-        var events = giftSnap.val() || {};
-        Object.keys(events).forEach(function (eventId) {
-          var ev = events[eventId];
-          if (!ev || seenGiftEventIds[eventId]) return;
-          seenGiftEventIds[eventId] = true;
-          if (ev.fromUid === S.me.id || now() - Number(ev.createdAt || 0) > 20000) return;
-          showFlyGiftToSeat(ev.emoji || "🎁", ev.fromName || "مستخدم", ev.toUid, ev.toName || "مستخدم");
-        });
+        if (!r) return;
+        var v = ms.val() || {}, prevKeys = {}, hadInitial = Array.isArray(cloud.roomMsgs[id]) && cloud.roomMsgs[id].length > 0;
+        (cloud.roomMsgs[id] || []).forEach(function (mItem) { if (mItem && mItem.key) prevKeys[mItem.key] = true; });
+        var arr = Object.keys(v).map(function (k) { return Object.assign({ key: k }, v[k]); });
+        arr.sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+        if (hadInitial) {
+          arr.forEach(function (mItem) {
+            if (!mItem || prevKeys[mItem.key]) return;
+            if (mItem.sys && mItem.joinUser && mItem.joinUser.uid && mItem.joinUser.uid !== S.me.id && !isBlockedEitherWay(mItem.joinUser.uid)) {
+              showEntryBanner(resolveLiveUser(mItem.joinUser.uid));
+            }
+            if (mItem.gift && mItem.gift.eventId && !seenGiftEventIds[mItem.gift.eventId]) {
+              seenGiftEventIds[mItem.gift.eventId] = true;
+              if (mItem.gift.fromUid !== S.me.id) {
+                showFlyGiftToSeat(mItem.gift.emoji || "🎁", mItem.gift.fromName || "مستخدم", mItem.gift.toUid || "", mItem.gift.toName || "مستخدم");
+              }
+            }
+          });
+        } else {
+          arr.forEach(function (mItem) { if (mItem && mItem.gift && mItem.gift.eventId) seenGiftEventIds[mItem.gift.eventId] = true; });
+        }
+        cloud.roomMsgs[id] = arr; r.msgs = arr;
+        if (UI.roomId === id) renderRoomChat();
       });
     }
-    joinVoiceChannel(id, seatIndexOf(room, S.me.id) >= 0 ? "publisher" : "subscriber");
-  }
-
-  async function leaveRoom(silent) {
-    closeSheet(); offDb("room");
-    var targetRoomId = UI.roomId || UI.floatingRoomId, room = getRoom(targetRoomId);
-    var stopMusic = !(S && S.settings && S.settings.stopMusicOnLeave === false);
-    UI.roomId = null; UI.roomSessionStart = 0; UI.floatingRoomId = null; UI.pendingSeatActionAt = 0;
-    $("room-view").classList.remove("open");
-    renderFloatingOrb();
-    await leaveVoiceChannel(false);
-
-    if (room) {
-      var si = seatIndexOf(room, S.me.id);
-      if (si >= 0) { room.seats[si].uid = null; room.seats[si].muted = false; }
-      room.listeners = (room.listeners || []).filter(function (x) { return x !== S.me.id; });
-      room.handRequests = (room.handRequests || []).filter(function (x) { return x !== S.me.id; });
-      var noOneLeft = count(room) === 0;
-      if ((noOneLeft || (room.owner === S.me.id && stopMusic)) && room.music && room.music.playing) {
-        room.music = { url: "", title: "", artist: "", playing: false, positionSec: 0, updatedAt: now() };
-      }
-      if (cloud.on && cloud.db && !UI.isGuest) {
-        var ups = {};
-        if (si >= 0) { ups["rooms/" + room.id + "/seats/" + si + "/uid"] = null; ups["rooms/" + room.id + "/seats/" + si + "/muted"] = false; }
-        ups["rooms/" + room.id + "/listeners/" + S.me.id] = null;
-        ups["rooms/" + room.id + "/handRequests/" + S.me.id] = null;
-        if (noOneLeft || (room.owner === S.me.id && stopMusic)) ups["rooms/" + room.id + "/music"] = null;
-        cloud.db.ref().update(ups).catch(function () { /* */ });
-      }
-      pushRoomMsg(room, { sys: true, text: (S.me.name || "مستخدم") + " غادر الغرفة" });
-    }
-    if (!silent) renderAll();
+    joinVoiceChannel(id, "publisher").then(function () {
+      var curR = getRoom(id);
+      if (curR && seatIndexOf(curR, S.me.id) >= 0) syncMicHardwareState();
+    });
   }
 
   function renderFloatingOrb() {
     var orb = $("floating-room-orb");
     if (!orb) return;
-    if (!UI.floatingRoomId) { orb.classList.add("hidden"); return; }
+    if (!UI.floatingRoomId || UI.roomId) { orb.classList.add("hidden"); return; }
     var r = getRoom(UI.floatingRoomId);
     if (!r) { UI.floatingRoomId = null; orb.classList.add("hidden"); return; }
     orb.classList.remove("hidden");
-    $("floating-orb-avatar").innerHTML = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="" />' : esc(COVER_ICONS[(r.icon || 0) % COVER_ICONS.length]);
-    $("floating-orb-label").textContent = r.name || "روم";
+    var lbl = $("floating-orb-label");
+    if (lbl) lbl.textContent = (musicState.playing ? "🎵 " : "🎙️ ") + r.name;
+    var av = $("floating-orb-avatar");
+    if (av) {
+      if (r.roomPhoto) av.innerHTML = '<img src="' + esc(r.roomPhoto) + '" alt="" />';
+      else av.textContent = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
+    }
   }
 
-  function toggleHandRaise(room) {
-    if (!room) return;
-    if (!Array.isArray(room.handRequests)) room.handRequests = [];
-    var idx = room.handRequests.indexOf(S.me.id);
-    if (idx >= 0) {
-      room.handRequests.splice(idx, 1);
-      if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + room.id + "/handRequests/" + S.me.id).remove().catch(function () { /* */ });
-      toast("تم إلغاء طلب الصعود للمايك");
-    } else {
-      room.handRequests.push(S.me.id);
-      if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + room.id + "/handRequests/" + S.me.id).set(true).catch(function () { /* */ });
-      pushRoomMsg(room, { sys: true, text: "✋ " + (S.me.name || "مستخدم") + " يطلب الصعود إلى المايك" });
-      toast("تم إرسال طلب الصعود للمايك ✋");
+  function minimizeRoomToFloatingOrb() {
+    if (!UI.roomId) return;
+    var r = getRoom(UI.roomId);
+    UI.floatingRoomId = UI.roomId; UI.roomId = null;
+    closeSheet();
+    if ($("room-view")) $("room-view").classList.remove("open");
+    renderFloatingOrb(); renderHome(); renderRooms();
+    toast(r ? "تم تصغير «" + r.name + "» والاستمرار في الاستماع 🎧" : "تم تصغير الغرفة");
+  }
+
+  async function leaveRoom(fullLeave) {
+    if (fullLeave === undefined) fullLeave = true;
+    var targetId = UI.roomId || UI.floatingRoomId;
+    var r = getRoom(targetId);
+    if (r) {
+      var idx = seatIndexOf(r, S.me.id);
+      if (idx >= 0 && fullLeave) {
+        r.seats[idx].uid = null; r.seats[idx].muted = false;
+        if (cloud.on && cloud.db && !UI.isGuest) {
+          cloud.db.ref("rooms/" + r.id + "/seats/" + idx).update({ uid: null, muted: false }).catch(function () { /* */ });
+        }
+      }
+      if (fullLeave) {
+        r.listeners = (r.listeners || []).filter(function (x) { return x !== S.me.id; });
+        r.handRequests = (r.handRequests || []).filter(function (x) { return x !== S.me.id; });
+        if (cloud.on && cloud.db && !UI.isGuest) {
+          cloud.db.ref("rooms/" + r.id + "/listeners/" + S.me.id).remove().catch(function () { /* */ });
+          cloud.db.ref("rooms/" + r.id + "/handRequests/" + S.me.id).remove().catch(function () { /* */ });
+        }
+        pushRoomMsg(r, { sys: true, text: (S.me.name || "مستخدم") + " غادر الغرفة" });
+      }
     }
-    renderRoom();
+    offDb("room");
+    if (fullLeave) {
+      UI.roomId = null; UI.floatingRoomId = null; UI.roomSessionStart = 0;
+      $("room-view").classList.remove("open");
+      var stopMusic = !(S && S.settings && S.settings.stopMusicOnLeave === false);
+      await leaveVoiceChannel(!stopMusic);
+    } else if (!UI.roomId && UI.floatingRoomId) {
+      UI.floatingRoomId = null;
+      await leaveVoiceChannel(false);
+    }
+    renderFloatingOrb(); renderHome(); renderRooms();
   }
 
   function renderRoom() {
     var r = getRoom(UI.roomId); if (!r) return;
     $("room-title").textContent = r.name;
-    var ownerU = resolveLiveUser(r.owner);
-    if ($("room-right-id")) $("room-right-id").textContent = "ID: " + displayUserId(ownerU);
-    $("room-meta").textContent = (CATEGORIES[r.cat] || r.cat) + " • " + count(r) + " داخل الغرفة" + (r.micApprovalMode ? " • ✋ المايك بطلب" : "") + (r.priv ? " • 🔒 خاصة" : "");
-    var p = $("room-pinned");
-    p.classList.toggle("hidden", !r.pinned);
-    if (r.pinned) p.textContent = "📌 تنبيه: " + r.pinned;
-
-    var mySeatIdx = seatIndexOf(r, S.me.id), onSeat = mySeatIdx >= 0;
-    var micBtn = $("room-mic-btn");
-    if (micBtn) {
-      micBtn.classList.toggle("hidden", !onSeat);
-      if (onSeat) {
-        var isSeatMuted = !!r.seats[mySeatIdx].muted;
-        var effMuted = UI.micMuted || isSeatMuted;
-        micBtn.classList.toggle("muted", effMuted);
-        micBtn.textContent = effMuted ? "🔇" : "🎤";
-        micBtn.title = isSeatMuted ? "مكتوم من الإدارة" : (UI.micMuted ? "فتح المايك" : "كتم المايك");
-      }
+    var rIdEl = $("room-right-id");
+    if (rIdEl) rIdEl.textContent = "ID: " + displayUserId({ id: r.owner || r.id, num: uidToAgoraNum(r.owner || r.id) });
+    var thumbEl = $("room-top-thumb");
+    if (thumbEl) {
+      if (r.roomPhoto) thumbEl.innerHTML = '<img src="' + esc(r.roomPhoto) + '" alt="" />';
+      else thumbEl.innerHTML = '<span id="room-top-thumb-inner">' + COVER_ICONS[(r.icon || 0) % COVER_ICONS.length] + "</span>";
     }
+    $("room-online-count").textContent = count(r);
+    var pBar = $("room-pinned-banner");
+    if (r.pinned) { pBar.classList.remove("hidden"); $("room-pinned-text").textContent = r.pinned; }
+    else pBar.classList.add("hidden");
+
+    var handReqs = Array.isArray(r.handRequests) ? r.handRequests : [];
+    var raiseBtn = $("raise-hand-btn"), raiseBadge = $("raise-badge");
+    if (raiseBadge) {
+      if (isRoomModOrOwner(r, S.me.id)) {
+        raiseBadge.textContent = String(handReqs.length);
+        raiseBadge.classList.toggle("hidden", handReqs.length === 0);
+      } else raiseBadge.classList.add("hidden");
+    }
+    var mySeatIdx = seatIndexOf(r, S.me.id), iAmRaised = handReqs.indexOf(S.me.id) >= 0;
+    if (raiseBtn) {
+      if (r.micApprovalMode && mySeatIdx < 0 && !isRoomModOrOwner(r, S.me.id)) {
+        raiseBtn.classList.remove("hidden");
+        raiseBtn.classList.toggle("active", iAmRaised);
+        raiseBtn.title = iAmRaised ? "إلغاء طلب المايك" : "رفع اليد لطلب المايك";
+      } else raiseBtn.classList.add("hidden");
+    }
+
     var spkBtn = $("room-speaker-btn");
     if (spkBtn) { spkBtn.classList.toggle("spk-muted", !!UI.roomSpeakerMuted); spkBtn.textContent = UI.roomSpeakerMuted ? "🔇" : "🔊"; }
+
+    var html = "";
+    r.seats.forEach(function (s, i) {
+      var u = s.uid ? resolveLiveUser(s.uid) : null, isMe = s.uid === S.me.id;
+      var muted = s.muted || (isMe && UI.micMuted);
+      var vipLv = u ? getEffectiveVip(u) : 0;
+      var cls = "seat" + (s.uid ? " occ" : "") + (s.locked ? " locked" : "");
+      var orbInner = s.locked ? "🔒" : (u ? '<div class="seatav">' + avatarInnerHTML(u) + "</div>" : "🎙️");
+      var sub = s.locked ? "مقفل" : (u ? (isRoomModOrOwner(r, s.uid) ? (r.owner === s.uid ? "👑 المالك" : "🛡️ مشرف") : (muted ? "🔇 مكتوم" : "🎙️ على المايك")) : (s.vip ? "👑 مقعد مميز" : "فارغ"));
+      html += '<div class="' + cls + '" data-seat="' + i + '"><div class="seat-orb">' + orbInner + '<span class="seat-num-badge">' + (i + 1) + "</span>" + (muted && s.uid ? '<span class="mutedmark">🔇</span>' : "") + '</div><div class="seat-meta-pill"><div class="seatname-full ' + (vipLv >= 2 ? "vip-gold" : "") + '">' + (u ? esc(u.name) : "مقعد " + (i + 1)) + '</div><div class="seatsub">' + sub + "</div></div></div>";
+    });
+    $("room-seats").innerHTML = html;
+    syncRoomMusicPlayer(r);
+    renderRoomChat();
+    updateSpeakingIndicators();
+    var mb = $("mic-btn");
+    if (mb) { mb.classList.toggle("rec-on", UI.micMuted); mb.textContent = UI.micMuted ? "🔇" : "🎙️"; }
     if ($("room-wallet-balance")) $("room-wallet-balance").textContent = Number(S.me.coins || 0).toLocaleString("en-US");
-
-    var handBtn = $("room-hand-btn");
-    if (handBtn) {
-      var showHand = !onSeat && !!r.micApprovalMode;
-      handBtn.classList.toggle("hidden", !showHand);
-      if (showHand) {
-        var raised = Array.isArray(r.handRequests) && r.handRequests.indexOf(S.me.id) >= 0;
-        handBtn.classList.toggle("active-hand", raised);
-        handBtn.textContent = raised ? "✋ تم رفع اليد" : "✋ طلب مايك";
-      }
-    }
-
-    var n = r.seats.length;
-    $("room-seats").className = "seats s" + n;
-    $("room-seats").innerHTML = r.seats.map(function (s, i) {
-      var u = s.uid ? resolveLiveUser(s.uid) : null, isOwnerSeat = i === 0, vipLv = u ? getEffectiveVip(u) : 0;
-      var cls = "seat" + (s.uid ? " occ" : "") + (s.locked ? " locked" : "") + (isOwnerSeat ? " owner-seat" : "") + (vipLv > 0 ? " vip-seat" : "");
-      var badge = isOwnerSeat ? '<span class="seat-badge owner">👑 المالك</span>' : (vipLv > 0 ? '<span class="seat-badge vip">VIP ' + vipLv + "</span>" : "");
-      var top = badge + (s.muted ? '<span class="seat-mute">🔇</span>' : "");
-      if (s.uid) {
-        return '<div class="' + cls + '" data-seat="' + i + '">' + top + '<div class="avatar">' + avatarInnerHTML(u) + '</div><div class="sname">' + esc(u.name) + "</div></div>";
-      }
-      return '<div class="' + cls + '" data-seat="' + i + '">' + top + '<div class="avatar">' + (s.locked ? "🔒" : "🎙️") + '</div><div class="sname">' + (s.locked ? "مقفل" : "مقعد " + (i + 1)) + "</div></div>";
-    }).join("");
-
-    renderRoomChat(); updateSpeakingIndicators();
   }
 
   function renderRoomChat() {
     var r = getRoom(UI.roomId); if (!r) return;
     var box = $("room-chat");
-    var visibleMsgs = (r.msgs || []).filter(function (m) { return !m.from || !isBlockedEitherWay(m.from); });
-    box.innerHTML = visibleMsgs.slice(-60).map(function (m) {
+    var msgs = (r.msgs || []).filter(function (m) { return !m.from || !isBlockedEitherWay(m.from); });
+    box.innerHTML = msgs.slice(-60).map(function (m) {
       if (m.sys) return '<div class="msg sys">' + esc(m.text) + "</div>";
-      var sender = resolveLiveUser(m.from);
-      var senderName = (m.from === S.me.id ? (S.me.name || sender.name) : sender.name) || m.name || "مستخدم";
-      var vipLv = getEffectiveVip(sender);
-      var tag = m.from === r.owner ? '<span class="tag owner">مالك</span>' : (vipLv > 0 ? '<span class="tag vip">VIP ' + vipLv + "</span>" : "");
-      if (m.gift) {
-        return '<div class="msg gift"><div class="m-top"><span class="m-name" data-profile="' + esc(m.from) + '">' + esc(senderName) + "</span>" + tag + '<span class="m-time">' + timeStr(m.t) + '</span></div><div class="gift-banner"><span>' + esc(m.gift) + "</span><span>" + esc(clean(m.text)) + "</span></div></div>";
-      }
-      return '<div class="msg"><div class="m-top"><span class="m-name" data-profile="' + esc(m.from) + '">' + esc(senderName) + "</span>" + tag + '<span class="m-time">' + timeStr(m.t) + '</span></div><div class="m-txt">' + esc(clean(m.text)) + "</div></div>";
+      var me = m.from === S.me.id, u = resolveLiveUser(m.from), senderName = me ? "أنت" : ((m.fromName && u.name === "مستخدم") ? m.fromName : u.name);
+      var body = m.img ? '<img src="' + esc(m.img) + '" style="max-width:190px;border-radius:10px;display:block" loading="lazy" />' : esc(m.text);
+      return '<div class="msg ' + (me ? "me" : "") + '">' + (!me ? '<div class="who" data-profile="' + esc(m.from) + '" style="cursor:pointer">' + esc(senderName) + "</div>" : "") + "<div>" + body + '</div><div class="tm">' + timeStr(m.t) + "</div></div>";
     }).join("");
     box.scrollTop = box.scrollHeight;
   }
 
-  async function takeSeat(i) {
+  function applySeatMutation(r, idx, mutatorFn, toastText) {
+    if (!r || !r.seats[idx]) return;
+    UI.pendingSeatActionAt = now();
+    mutatorFn(r.seats[idx]);
+    if (cloud.on && cloud.db && !UI.isGuest) {
+      cloud.db.ref("rooms/" + r.id + "/seats/" + idx).set({
+        uid: r.seats[idx].uid || null, locked: !!r.seats[idx].locked, muted: !!r.seats[idx].muted, vip: !!r.seats[idx].vip
+      }).catch(function () { /* */ });
+      if (r.seats[idx].uid) {
+        cloud.db.ref("rooms/" + r.id + "/listeners/" + r.seats[idx].uid).remove().catch(function () { /* */ });
+        cloud.db.ref("rooms/" + r.id + "/handRequests/" + r.seats[idx].uid).remove().catch(function () { /* */ });
+      }
+    }
+    syncMicHardwareState(); renderRoom(); renderHome();
+    if (toastText) toast(toastText);
+  }
+
+  function onSeatClick(i) {
     var r = getRoom(UI.roomId); if (!r) return;
     var s = r.seats[i]; if (!s) return;
-    var isMod = isRoomModOrOwner(r, S.me.id), curIdx = seatIndexOf(r, S.me.id);
+    var mod = isRoomModOrOwner(r, S.me.id), curIdx = seatIndexOf(r, S.me.id);
 
-    if (s.uid === S.me.id) {
-      openSheet("<h3>🎙️ مقعدك الحالي (#" + (i + 1) + ")</h3><button class='btn red block' id='leave-seat-btn' type='button'>النزول من المايك</button>");
-      $("leave-seat-btn").onclick = function () { leaveSeat(r, i); closeSheet(); };
+    if (s.uid && s.uid !== S.me.id) {
+      var u = resolveLiveUser(s.uid);
+      var html = "<h3>" + esc(u.name) + '</h3><div class="meta">مقعد #' + (i + 1) + (getEffectiveVip(u) > 0 ? " • VIP " + getEffectiveVip(u) : "") + '</div><div class="actlist" style="margin-top:10px">' +
+        '<button data-act="prof" type="button">👤 عرض الملف الشخصي</button><button data-act="gift" type="button">🎁 إرسال هدية</button>';
+      if (mod) {
+        html += '<button data-act="mute" type="button">' + (s.muted ? "🔊 فك كتم المايك" : "🔇 كتم المايك") + "</button>" +
+          '<button data-act="kickseat" class="danger" type="button">⬇ إنزال من المقعد</button>' +
+          '<button data-act="banroom" class="danger" type="button">🚫 طرد وحظر من الغرفة</button>';
+      }
+      html += "</div>";
+      openSheet(html);
+      $("sheet").querySelectorAll("[data-act]").forEach(function (b) {
+        b.onclick = function () {
+          var act = b.getAttribute("data-act"); closeSheet();
+          if (act === "prof") openUserProfileSheet(s.uid);
+          else if (act === "gift") openGiftSheet(s.uid);
+          else if (act === "mute") applySeatMutation(r, i, function (seat) { seat.muted = !seat.muted; }, s.muted ? "تم فك الكتم" : "تم كتم المقعد");
+          else if (act === "kickseat") {
+            var kickedId = s.uid;
+            applySeatMutation(r, i, function (seat) { seat.uid = null; seat.muted = false; }, "تم إنزال المستخدم من المقعد");
+            if (cloud.on && cloud.db && !UI.isGuest && kickedId) cloud.db.ref("rooms/" + r.id + "/listeners/" + kickedId).set(true).catch(function () { /* */ });
+          } else if (act === "banroom") {
+            if (!Array.isArray(r.bans)) r.bans = [];
+            if (r.bans.indexOf(s.uid) < 0) r.bans.push(s.uid);
+            r.listeners = (r.listeners || []).filter(function (x) { return x !== s.uid; });
+            applySeatMutation(r, i, function (seat) { seat.uid = null; seat.muted = false; }, "تم حظر المستخدم من الغرفة");
+            if (cloud.on && cloud.db && !UI.isGuest) {
+              cloud.db.ref("rooms/" + r.id + "/bans/" + s.uid).set(true).catch(function () { /* */ });
+              cloud.db.ref("rooms/" + r.id + "/listeners/" + s.uid).remove().catch(function () { /* */ });
+            }
+          }
+        };
+      });
       return;
     }
-    if (s.uid && s.uid !== S.me.id) { openUserProfileSheet(s.uid); return; }
-    if (s.locked && !isMod) { toast("هذا المقعد مقفل 🔒"); return; }
-    if (r.micApprovalMode && !isMod && curIdx < 0) {
+
+    if (s.uid === S.me.id) {
+      openSheet("<h3>مقعدك #" + (i + 1) + '</h3><div class="actlist">' +
+        '<button data-act="selfmute" type="button">' + (UI.micMuted ? "🎙️ فتح الميكروفون" : "🔇 كتم الميكروفون") + "</button>" +
+        '<button data-act="leave" class="danger" type="button">⬇ النزول من المقعد</button></div>');
+      $("sheet").querySelectorAll("[data-act]").forEach(function (b) {
+        b.onclick = function () {
+          var act = b.getAttribute("data-act"); closeSheet();
+          if (act === "selfmute") {
+            UI.micMuted = !UI.micMuted;
+            if (!UI.micMuted) s.muted = false;
+            applySeatMutation(r, i, function (seat) { if (!UI.micMuted) seat.muted = false; }, UI.micMuted ? "تم كتم الميكروفون" : "تم فتح الميكروفون");
+          } else if (act === "leave") {
+            applySeatMutation(r, i, function (seat) { seat.uid = null; seat.muted = false; }, "نزلت من المقعد");
+            if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/listeners/" + S.me.id).set(true).catch(function () { /* */ });
+          }
+        };
+      });
+      return;
+    }
+
+    if (s.locked) {
+      if (!mod) { toast("هذا المقعد مقفل 🔒"); return; }
+      openSheet("<h3>مقعد مقفل #" + (i + 1) + '</h3><div class="actlist"><button data-act="unlock" type="button">🔓 فتح المقعد</button></div>');
+      $("sheet").querySelector("[data-act='unlock']").onclick = function () { closeSheet(); applySeatMutation(r, i, function (seat) { seat.locked = false; }, "تم فتح المقعد"); };
+      return;
+    }
+
+    if (r.micApprovalMode && !mod) {
       if (!Array.isArray(r.handRequests)) r.handRequests = [];
       if (r.handRequests.indexOf(S.me.id) < 0) {
         r.handRequests.push(S.me.id);
         if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + S.me.id).set(true).catch(function () { /* */ });
-        pushRoomMsg(r, { sys: true, text: "✋ " + (S.me.name || "مستخدم") + " يطلب الصعود إلى المقعد #" + (i + 1) });
-      }
-      toast("الغرفة بنظام طلب المايك — تم إرسال طلبك للمشرف ✋");
-      renderRoom(); return;
+        renderRoom(); toast("تم إرسال طلب الصعود للمايك ✋");
+      } else toast("طلبك قيد الانتظار لدى إدارة الغرفة");
+      return;
     }
 
-    UI.pendingSeatActionAt = now();
-    if (curIdx >= 0 && curIdx !== i) { r.seats[curIdx].uid = null; r.seats[curIdx].muted = false; }
-    s.uid = S.me.id; s.muted = false;
+    if (curIdx >= 0) applySeatMutation(r, curIdx, function (seat) { seat.uid = null; seat.muted = false; });
+    UI.micMuted = false;
     r.listeners = (r.listeners || []).filter(function (x) { return x !== S.me.id; });
     r.handRequests = (r.handRequests || []).filter(function (x) { return x !== S.me.id; });
-    UI.micMuted = false;
-
-    if (cloud.on && cloud.db && !UI.isGuest) {
-      var ups = {};
-      if (curIdx >= 0 && curIdx !== i) { ups["rooms/" + r.id + "/seats/" + curIdx + "/uid"] = null; ups["rooms/" + r.id + "/seats/" + curIdx + "/muted"] = false; }
-      ups["rooms/" + r.id + "/seats/" + i + "/uid"] = S.me.id;
-      ups["rooms/" + r.id + "/seats/" + i + "/muted"] = false;
-      ups["rooms/" + r.id + "/listeners/" + S.me.id] = null;
-      ups["rooms/" + r.id + "/handRequests/" + S.me.id] = null;
-      try {
-        var sRef = cloud.db.ref("rooms/" + r.id + "/seats/" + i + "/uid");
-        sRef.onDisconnect().set(null);
-      } catch (e) { /* */ }
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-    }
-    pushRoomMsg(r, { sys: true, text: (S.me.name || "مستخدم") + " صعد إلى المقعد #" + (i + 1) + " 🎤" });
-    renderRoom();
-    if (voice.client && voice.client.connectionState === "CONNECTED") await publishLocalMic();
-    else await joinVoiceChannel(r.id, "publisher");
+    applySeatMutation(r, i, function (seat) { seat.uid = S.me.id; seat.muted = false; }, "صعدت إلى المقعد #" + (i + 1) + " 🎙️");
   }
 
-  async function leaveSeat(r, i) {
-    if (!r || !r.seats[i]) return;
-    var targetUid = r.seats[i].uid, isSelf = targetUid === S.me.id;
-    UI.pendingSeatActionAt = now();
-    r.seats[i].uid = null; r.seats[i].muted = false;
-    if (isSelf) {
-      if (!Array.isArray(r.listeners)) r.listeners = [];
-      if (r.listeners.indexOf(S.me.id) < 0) r.listeners.push(S.me.id);
-      await stopLocalMic();
-    }
-    if (cloud.on && cloud.db && !UI.isGuest) {
-      var ups = {};
-      ups["rooms/" + r.id + "/seats/" + i + "/uid"] = null;
-      ups["rooms/" + r.id + "/seats/" + i + "/muted"] = false;
-      if (isSelf) ups["rooms/" + r.id + "/listeners/" + S.me.id] = true;
-      cloud.db.ref().update(ups).catch(function () { /* */ });
-    }
-    pushRoomMsg(r, { sys: true, text: (isSelf ? (S.me.name || "مستخدم") : resolveLiveUser(targetUid).name) + " نزل من المقعد #" + (i + 1) });
-    renderRoom();
-  }
-
-  function openSeatMenu(i) {
+  function openRoomPresenceSheet() {
     var r = getRoom(UI.roomId); if (!r) return;
-    var s = r.seats[i], isMod = isRoomModOrOwner(r, S.me.id);
-    if (!isMod) { takeSeat(i); return; }
-
-    var h = "<h3>🎛️ إدارة المقعد #" + (i + 1) + "</h3><div class='actlist'>";
-    if (!s.uid) {
-      if (seatIndexOf(r, S.me.id) !== i) h += '<button data-act="take" type="button">🎤 الصعود إلى هذا المقعد</button>';
-      h += '<button data-act="lock" type="button">' + (s.locked ? "🔓 فتح قفل المقعد" : "🔒 قفل المقعد") + "</button>";
-    } else {
-      var u = resolveLiveUser(s.uid);
-      h += '<button data-act="profile" type="button">👤 عرض ملف ' + esc(u.name) + "</button>";
-      if (s.uid !== S.me.id) {
-        h += '<button data-act="gift" type="button">🎁 إرسال هدية إلى ' + esc(u.name) + "</button>";
-        h += '<button data-act="kickseat" type="button">⬇️ إنزال من المقعد</button>';
-        h += '<button data-act="banroom" type="button">🚫 طرد وحظر من الغرفة</button>';
-      } else h += '<button data-act="leaveseat" type="button">⬇️ النزول من المقعد</button>';
-      h += '<button data-act="mute" type="button">' + (s.muted ? "🔊 فك كتم المايك" : "🔇 كتم مايك المقعد") + "</button>";
+    var mod = isRoomModOrOwner(r, S.me.id), handReqs = Array.isArray(r.handRequests) ? r.handRequests : [], pIds = getRoomParticipantIds(r);
+    var html = "<h3>🎧 المتواجدون في الغرفة (" + pIds.length + ")</h3>";
+    if (mod && handReqs.length) {
+      html += "<label>✋ طلبات المايك (" + handReqs.length + ')</label><div class="list" style="margin-bottom:10px">';
+      handReqs.forEach(function (reqUid) {
+        var ru = resolveLiveUser(reqUid);
+        html += '<div class="row glass">' + avatarHTML(ru, "sm") + '<div class="info"><div class="name">' + esc(ru.name) + '</div><div class="meta">يطلب الصعود للمايك</div></div><div class="row-actions"><button class="btn sm ok" data-approve-hand="' + esc(reqUid) + '" type="button">قبول</button><button class="btn sm ghost" data-reject-hand="' + esc(reqUid) + '" type="button">رفض</button></div></div>';
+      });
+      html += "</div>";
     }
-    h += "</div>"; openSheet(h);
-
-    $("sheet").querySelectorAll("[data-act]").forEach(function (b) {
+    html += '<div class="list">' + (pIds.length ? pIds.map(function (pid) {
+      var pu = resolveLiveUser(pid), onSeat = seatIndexOf(r, pid) >= 0;
+      return '<div class="row glass" data-profile="' + esc(pid) + '">' + avatarHTML(pu, "sm") + '<div class="info"><div class="name">' + esc(pu.name) + (r.owner === pid ? ' <span class="tag vip">مالك</span>' : (isRoomModOrOwner(r, pid) ? ' <span class="tag">مشرف</span>' : "")) + '</div><div class="meta">' + (onSeat ? "🎙️ على مقعد" : "🎧 مستمع") + "</div></div></div>";
+    }).join("") : '<div class="empty">لا يوجد متواجدون حالياً</div>') + "</div>";
+    openSheet(html);
+    $("sheet").querySelectorAll("[data-approve-hand]").forEach(function (b) {
       b.onclick = function () {
-        var act = b.getAttribute("data-act"); closeSheet();
-        if (act === "take") takeSeat(i);
-        else if (act === "leaveseat" || act === "kickseat") leaveSeat(r, i);
-        else if (act === "lock") {
-          s.locked = !s.locked;
-          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/seats/" + i + "/locked").set(s.locked).catch(function () { /* */ });
-          renderRoom();
-        } else if (act === "mute") {
-          s.muted = !s.muted;
-          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/seats/" + i + "/muted").set(s.muted).catch(function () { /* */ });
-          if (s.uid === S.me.id) syncMicHardwareState();
-          renderRoom();
-        } else if (act === "profile") openUserProfileSheet(s.uid);
-        else if (act === "gift") openGiftSheet(s.uid);
-        else if (act === "banroom") {
-          var kickedUid = s.uid;
-          if (!Array.isArray(r.bans)) r.bans = [];
-          if (r.bans.indexOf(kickedUid) < 0) r.bans.push(kickedUid);
-          s.uid = null; s.muted = false;
-          r.listeners = (r.listeners || []).filter(function (x) { return x !== kickedUid; });
-          if (cloud.on && cloud.db && !UI.isGuest) {
-            cloud.db.ref().update({
-              ["rooms/" + r.id + "/bans/" + kickedUid]: true,
-              ["rooms/" + r.id + "/seats/" + i + "/uid"]: null,
-              ["rooms/" + r.id + "/seats/" + i + "/muted"]: false,
-              ["rooms/" + r.id + "/listeners/" + kickedUid]: null
-            }).catch(function () { /* */ });
-          }
-          pushRoomMsg(r, { sys: true, text: "🚫 تم حظر " + resolveLiveUser(kickedUid).name + " من الغرفة" });
-          renderRoom();
-        }
+        var targetUid = b.getAttribute("data-approve-hand");
+        var freeIdx = r.seats.findIndex(function (st) { return !st.uid && !st.locked; });
+        if (freeIdx < 0) { toast("لا يوجد مقعد فارغ حالياً"); return; }
+        r.handRequests = (r.handRequests || []).filter(function (x) { return x !== targetUid; });
+        r.listeners = (r.listeners || []).filter(function (x) { return x !== targetUid; });
+        if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + targetUid).remove().catch(function () { /* */ });
+        applySeatMutation(r, freeIdx, function (seat) { seat.uid = targetUid; seat.muted = false; }, "تم صعود " + resolveLiveUser(targetUid).name + " للمقعد #" + (freeIdx + 1));
+        closeSheet();
+      };
+    });
+    $("sheet").querySelectorAll("[data-reject-hand]").forEach(function (b) {
+      b.onclick = function () {
+        var targetUid = b.getAttribute("data-reject-hand");
+        r.handRequests = (r.handRequests || []).filter(function (x) { return x !== targetUid; });
+        if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + targetUid).remove().catch(function () { /* */ });
+        renderRoom(); openRoomPresenceSheet();
       };
     });
   }
 
   function openRoomMenu() {
     var r = getRoom(UI.roomId); if (!r) return;
-    var isOwner = r.owner === S.me.id, isMod = isRoomModOrOwner(r, S.me.id);
-    var h = "<h3>⚙️ خيارات الغرفة</h3><div class='actlist'>";
-    h += '<button data-m="minimize" type="button">🫧 تصغير الغرفة (نافذة عائمة)</button>';
-    h += '<button data-m="invite" type="button">📩 دعوة صديق للغرفة</button>';
-    h += '<button data-m="participants" type="button">👥 المتواجدون في الغرفة (' + count(r) + ")</button>";
-    if (isMod) {
-      h += '<button data-m="rename" type="button">✏️ تعديل اسم ووصف الغرفة</button>';
-      h += '<button data-m="pin" type="button">📌 تثبيت / تعديل إعلان الغرفة</button>';
-      h += '<button data-m="approval" type="button">' + (r.micApprovalMode ? "✅ إيقاف وضع طلب المايك" : "✋ تفعيل وضع طلب المايك") + "</button>";
-      h += '<button data-m="lockroom" type="button">' + (r.locked ? "🔓 فتح قفل الغرفة" : "🔒 قفل الغرفة") + "</button>";
+    var mod = isRoomModOrOwner(r, S.me.id), isOwner = r.owner === S.me.id;
+    var html = "<h3>خيارات الغرفة</h3>" + (r.desc ? '<div class="meta" style="margin-bottom:8px">' + esc(r.desc) + "</div>" : "") + '<div class="actlist"><button data-m="hide" type="button">⬇️ تصغير الغرفة (الاستمرار في الاستماع)</button><button data-m="music" type="button">🎵 مشغل الموسيقى</button><button data-m="friends" type="button">👥 دعوة الأصدقاء</button>';
+    if (mod) {
+      html += '<button data-m="rename" type="button">✏️ تعديل اسم ووصف الغرفة</button><button data-m="pin" type="button">📌 تثبيت رسالة / إعلان</button><button data-m="approval" type="button">' + (r.micApprovalMode ? "🔓 إيقاف وضع طلب المايك" : "✋ تفعيل وضع طلب المايك") + "</button>";
     }
-    if (isOwner) h += '<button data-m="delete" style="color:var(--bad)" type="button">🗑️ حذف الغرفة نهائياً</button>';
-    h += '<button data-m="leave" style="color:var(--bad)" type="button">🚪 مغادرة الغرفة</button></div>';
-    openSheet(h);
-
+    if (isOwner) html += '<button data-m="delete" class="danger" type="button">🗑️ حذف الغرفة</button>';
+    html += '<button data-m="leave" class="danger" type="button">🚪 مغادرة الغرفة</button></div>';
+    openSheet(html);
     $("sheet").querySelectorAll("[data-m]").forEach(function (b) {
-      b.onclick = function () {
-        var m = b.getAttribute("data-m"); closeSheet();
-        if (m === "minimize") {
-          UI.floatingRoomId = r.id; UI.roomId = null;
-          $("room-view").classList.remove("open");
-          renderFloatingOrb(); renderAll();
-          toast("تم تصغير الغرفة — الصوت مستمر 🎧");
-        } else if (m === "invite") openRoomFriendsInviteSheet();
-        else if (m === "participants") {
-          var ids = getRoomParticipantIds(r);
-          var listHtml = ids.length ? ids.map(function (pid) {
-            var pu = resolveLiveUser(pid), onMic = seatIndexOf(r, pid) >= 0;
-            return '<div class="row glass" data-profile="' + esc(pid) + '">' + avatarHTML(pu, "sm") + '<div class="info"><div class="name">' + esc(pu.name) + '</div><div class="meta">' + (onMic ? "🎤 على المايك" : "🎧 مستمع") + "</div></div></div>";
-          }).join("") : '<div class="empty">لا يوجد متواجدون</div>';
-          openSheet("<h3>👥 المتواجدون في الغرفة</h3><div class='list'>" + listHtml + "</div>");
-        } else if (m === "rename") openRenameRoomSheet(r);
-        else if (m === "pin") {
-          openSheet("<h3>📌 إعلان الغرفة</h3><input id='pin-in' maxlength='120' value='" + esc(r.pinned || "") + "' /><button class='btn block' id='pin-save' type='button'>حفظ الإعلان</button>");
-          $("pin-save").onclick = function () {
-            r.pinned = clean($("pin-in").value.trim());
+      b.onclick = async function () {
+        var m = b.getAttribute("data-m");
+        if (m === "hide") { minimizeRoomToFloatingOrb(); return; }
+        if (m === "music") { openMusicSheet(); return; }
+        if (m === "friends") { openRoomFriendsInviteSheet(); return; }
+        if (m === "rename") { openRenameRoomSheet(r); return; }
+        closeSheet();
+        if (m === "pin") {
+          var p = prompt("اكتب الإعلان المثبت (أو اتركه فارغاً للإزالة):", r.pinned || "");
+          if (p !== null) {
+            r.pinned = clean(p.trim());
             if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/pinned").set(r.pinned).catch(function () { /* */ });
-            closeSheet(); renderRoom();
-          };
+            renderRoom(); toast("تم تحديث التثبيت");
+          }
         } else if (m === "approval") {
           r.micApprovalMode = !r.micApprovalMode;
           if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/micApprovalMode").set(r.micApprovalMode).catch(function () { /* */ });
-          renderRoom(); toast(r.micApprovalMode ? "تم تفعيل وضع طلب المايك ✋" : "تم إيقاف وضع طلب المايك");
-        } else if (m === "lockroom") {
-          r.locked = !r.locked;
-          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/locked").set(r.locked).catch(function () { /* */ });
-          renderRoom(); toast(r.locked ? "تم قفل الغرفة 🔒" : "تم فتح الغرفة 🔓");
+          renderRoom(); toast(r.micApprovalMode ? "تم تفعيل وضع طلب المايك" : "تم إيقاف وضع طلب المايك");
         } else if (m === "delete") {
-          var roomIdToDelete = r.id, roomOwnerId = r.owner || S.me.id;
-          leaveRoom(true).then(function () {
-            S.rooms = (S.rooms || []).filter(function (item) { return item.id !== roomIdToDelete; });
-            if (cloud.on && cloud.db && !UI.isGuest) {
-              cloud.db.ref("rooms/" + roomIdToDelete).remove().catch(function () { /* */ });
-              cloud.db.ref("roomMessages/" + roomIdToDelete).remove().catch(function () { /* */ });
-              cloud.db.ref("giftEvents/" + roomIdToDelete).remove().catch(function () { /* */ });
-              if (roomOwnerId) cloud.db.ref("userRoomIndex/" + roomOwnerId).transaction(function (current) { return current === roomIdToDelete ? null : current; }).catch(function () { /* */ });
-            }
-            saveLocal(); renderAll(); toast("تم حذف الغرفة نهائياً 🗑️");
-          });
-        } else if (m === "leave") leaveRoom(false);
+          if (!isOwner) { toast("حذف الغرفة متاح لمالك الغرفة فقط"); return; }
+          var rid = r.id;
+          S.rooms = (S.rooms || []).filter(function (x) { return x && x.id !== rid; });
+          await leaveRoom(true);
+          if (cloud.on && cloud.db && !UI.isGuest) {
+            try { await cloud.db.ref("rooms/" + rid).remove(); } catch (_) {}
+            try { await cloud.db.ref("roomMessages/" + rid).remove(); } catch (_) {}
+            try { await cloud.db.ref("userRoomIndex/" + S.me.id).transaction(function (curr) { return curr === rid ? null : curr; }); } catch (_) {}
+          }
+          saveLocal(); renderAll(); toast("تم حذف الغرفة");
+        } else if (m === "leave") { await leaveRoom(true); }
       };
     });
   }
@@ -3006,532 +3033,713 @@
   function openMusicSheet() {
     var r = getRoom(UI.roomId || UI.floatingRoomId); if (!r) return;
     var canCtrl = canControlRoomMusic(r), pl = Array.isArray(r.playlist) && r.playlist.length ? r.playlist : DEFAULT_TRACKS;
-    var curMusic = r.music || {}, isPlaying = !!(curMusic && curMusic.playing && curMusic.url);
-    var volPct = Math.round((typeof UI.musicVolume === "number" ? UI.musicVolume : 0.7) * 100);
+    var curPlaying = !!(r.music && r.music.playing && r.music.url), curPosSec = Math.floor(computeMusicPositionSec(r.music));
+    var curTitle = (r.music && r.music.title) || "لا يوجد مقطع قيد التشغيل";
 
-    var tracksHtml = pl.map(function (t, idx) {
-      var active = curMusic.url === t.url && isPlaying;
-      return '<div class="row glass" style="margin-bottom:6px"><div class="avatar sm">' + esc(t.cover || "🎵") + '</div><div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist || "موسيقى الغرفة") + (active ? " • ▶️ قيد التشغيل" : "") + '</div></div>' + (canCtrl ? '<button class="btn sm ' + (active ? "ghost" : "ok") + '" data-play-track="' + idx + '" type="button">' + (active ? "إيقاف" : "تشغيل") + "</button>" : "") + "</div>";
-    }).join("");
+    var html = "<h3>🎵 مشغل موسيقى الغرفة</h3><div class='row glass' style='margin-bottom:8px'><div class='info'><div class='name'>" + esc(curTitle) + "</div><div class='meta'>" + (curPlaying ? "▶ يعمل الآن (" + curPosSec + " ثانية) • متزامن للجميع" : "⏸ متوقف") + " • " + (canCtrl ? "لديك صلاحية التحكم" : "مستمع") + '</div></div><div class="row-actions">' + (canCtrl ? '<button class="btn sm ' + (curPlaying ? "ghost" : "ok") + '" id="m-play-pause" type="button">' + (curPlaying ? "⏸ إيقاف" : "▶ تشغيل") + "</button>" : "") + "</div></div>" +
+      '<div class="switchrow"><span>مستوى صوت الموسيقى (' + Math.round((UI.musicVolume || 0.7) * 100) + '%)</span><input type="range" id="m-vol-slider" min="0" max="100" value="' + Math.round((UI.musicVolume || 0.7) * 100) + '" style="width:120px" /></div>' +
+      "<label>قائمة الأغاني</label>" + pl.map(function (t, idx) {
+        return '<div class="track-row" data-track-idx="' + idx + '"><div style="font-size:22px">' + esc(t.cover || "🎵") + '</div><div class="info"><div class="name">' + esc(t.title) + '</div><div class="meta">' + esc(t.artist || "مقطع صوتي") + "</div></div>" + (canCtrl ? '<button class="btn sm" type="button">▶ تشغيل</button>' : "") + "</div>";
+      }).join("");
 
-    openSheet("<h3>🎵 موسيقى الغرفة المتزامنة</h3>" +
-      (!canCtrl ? '<div class="notice">الموسيقى تُبث لجميع المتواجدين في الغرفة. التحكم بالتشغيل والإيقاف متاح لمالك الغرفة والمشرفين.</div>' : "") +
-      (isPlaying ? '<div class="row glass" style="margin-bottom:8px"><div class="info"><div class="name">🎶 يعمل الآن: ' + esc(curMusic.title || "مقطع صوتي") + '</div><div class="meta">متزامن مع جميع الحضور</div></div>' + (canCtrl ? '<button class="btn sm red" id="mus-stop-btn" type="button">⏹ إيقاف</button>' : "") + "</div>" : "") +
-      "<label>مستوى صوت الموسيقى لديك (" + volPct + "%)</label><input id='mus-vol-slider' type='range' min='0' max='100' value='" + volPct + "' style='width:100%' />" +
-      (canCtrl ? "<label style='margin-top:10px'>تشغيل رابط صوتي مباشر (MP3 / Stream)</label><div style='display:flex;gap:6px'><input id='mus-url-input' placeholder='https://example.com/song.mp3' /><button class='btn sm ok' id='mus-url-play' type='button'>بث</button></div>" : "") +
-      "<label style='margin-top:10px'>قائمة الأغاني</label><div class='list'>" + tracksHtml + "</div>");
+    if (canCtrl) {
+      html += "<label style='margin-top:10px'>إضافة أغنية جديدة (عنوان + رابط MP3 مباشر)</label><input id='m-new-title' placeholder='اسم الأغنية' style='margin-bottom:6px' /><input id='m-new-url' placeholder='https://example.com/song.mp3' /><button class='btn sm block' id='m-add-track' type='button'>+ إضافة للقائمة وتشغيلها</button>";
+    }
+    openSheet(html);
 
-    if ($("mus-vol-slider")) {
-      $("mus-vol-slider").oninput = function () {
-        UI.musicVolume = Number(this.value || 70) / 100;
+    if ($("m-vol-slider")) {
+      $("m-vol-slider").oninput = function () {
+        UI.musicVolume = Number(this.value) / 100;
         if (musicState.roomAudio) { try { musicState.roomAudio.volume = UI.musicVolume; } catch (e) { /* */ } }
       };
     }
-    if ($("mus-stop-btn")) {
-      $("mus-stop-btn").onclick = function () {
-        setRoomMusicRemote(r.id, { url: "", title: "", artist: "", playing: false, positionSec: 0, updatedAt: now() });
+    if ($("m-play-pause") && canCtrl) {
+      $("m-play-pause").onclick = function () {
+        if (curPlaying) {
+          setRoomMusicRemote(r.id, { url: r.music.url, title: r.music.title, artist: r.music.artist || "", playing: false, positionSec: computeMusicPositionSec(r.music), updatedAt: now() });
+        } else {
+          var first = (r.music && r.music.url) ? r.music : pl[0];
+          if (!first || !first.url) { toast("أضف رابط أغنية أولاً"); return; }
+          setRoomMusicRemote(r.id, { url: first.url, title: first.title, artist: first.artist || "", playing: true, positionSec: computeMusicPositionSec(r.music), updatedAt: now() });
+        }
         openMusicSheet();
       };
     }
-    if ($("mus-url-play")) {
-      $("mus-url-play").onclick = function () {
-        var uVal = ($("mus-url-input").value || "").trim();
-        if (!/^https?:\/\//i.test(uVal)) { toast("أدخل رابط صوتي صحيح يبدأ بـ http أو https"); return; }
-        setRoomMusicRemote(r.id, { url: uVal, title: "بث صوتي مخصص", artist: "موسيقى الغرفة", playing: true, positionSec: 0, updatedAt: now() });
-        closeSheet(); toast("تم تشغيل المقطع للجميع 🎵");
-      };
-    }
-    $("sheet").querySelectorAll("[data-play-track]").forEach(function (btn) {
-      btn.onclick = function () {
-        var idx = Number(btn.getAttribute("data-play-track")), tr = pl[idx];
-        if (!tr) return;
-        if (curMusic.url === tr.url && isPlaying) setRoomMusicRemote(r.id, { url: tr.url, title: tr.title, artist: tr.artist || "", playing: false, positionSec: computeMusicPositionSec(curMusic), updatedAt: now() });
-        else setRoomMusicRemote(r.id, { url: tr.url, title: tr.title, artist: tr.artist || "", playing: true, positionSec: 0, updatedAt: now() });
-        openMusicSheet();
+    $("sheet").querySelectorAll("[data-track-idx]").forEach(function (row) {
+      row.onclick = function () {
+        if (!canCtrl) { toast("التحكم بالموسيقى متاح لمالك الغرفة والمشرفين فقط"); return; }
+        var idx = Number(row.getAttribute("data-track-idx")), tr = pl[idx];
+        if (!tr || !tr.url) return;
+        setRoomMusicRemote(r.id, { url: tr.url, title: tr.title, artist: tr.artist || "", playing: true, positionSec: 0, updatedAt: now() });
+        openMusicSheet(); toast("تم تشغيل «" + tr.title + "» للجميع 🎵");
       };
     });
+    if ($("m-add-track") && canCtrl) {
+      $("m-add-track").onclick = function () {
+        var title = clean(($("m-new-title").value || "").trim()), url = ($("m-new-url").value || "").trim();
+        if (!title || !/^https?:\/\/\S+/i.test(url)) { toast("أدخل عنواناً ورابطاً صحيحاً يبدأ بـ http أو https"); return; }
+        var newTrack = { id: uid(), title: title, artist: "مضافة للغرفة", cover: "🎶", url: url };
+        r.playlist = (Array.isArray(r.playlist) ? r.playlist : DEFAULT_TRACKS.slice()).concat([newTrack]);
+        if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/playlist").set(r.playlist).catch(function () { /* */ });
+        setRoomMusicRemote(r.id, { url: newTrack.url, title: newTrack.title, artist: newTrack.artist, playing: true, positionSec: 0, updatedAt: now() });
+        openMusicSheet(); toast("تمت إضافة وتشغيل «" + title + "» ✅");
+      };
+    }
   }
 
-  function openGiftSheet(preTarget) {
-    var r = getRoom(UI.roomId || UI.floatingRoomId);
-    if (!r) { toast("يجب التواجد داخل غرفة لإرسال الهدايا"); return; }
-    var activeGifts = getActiveGifts(), myCoins = Math.max(0, Number(S.me.coins || 0)), myVip = getEffectiveVip(S.me);
-    var targets = [];
-    (r.seats || []).forEach(function (s, idx) {
-      if (s && s.uid && s.uid !== S.me.id && !isBlockedEitherWay(s.uid)) {
-        var u = resolveLiveUser(s.uid);
-        targets.push({ id: s.uid, label: "مقعد #" + (idx + 1) + " — " + u.name });
-      }
-    });
-    if (!targets.length) { openSheet("<h3>🎁 إرسال هدية</h3><div class='empty'>لا يوجد مستخدمون آخرون على المقاعد حالياً لإرسال هدية لهم</div>"); return; }
-    if (!preTarget || !targets.some(function (t) { return t.id === preTarget; })) UI.giftTarget = targets[0].id;
-    else UI.giftTarget = preTarget;
-    if (!activeGifts.some(function (g) { return g.id === UI.giftSel; })) UI.giftSel = activeGifts[0].id;
+  function openEmojiSheet(onPick) {
+    openSheet("<h3>😀 اختر إيموجي</h3><div class='emojigrid'>" + EMOJIS.map(function (e) { return '<button type="button">' + e + "</button>"; }).join("") + "</div>");
+    $("sheet").querySelectorAll("button").forEach(function (b) { b.onclick = function () { closeSheet(); onPick(b.textContent); }; });
+  }
+  function openStickerSheet(onPick) {
+    openSheet("<h3>🎭 اختر ملصقاً</h3><div class='giftgrid'>" + STICKERS.map(function (s) { return '<div class="gift" data-s="' + esc(s.e) + '"><div class="e">' + s.e + "</div><small>" + esc(s.n) + "</small></div>"; }).join("") + "</div>");
+    $("sheet").querySelectorAll("[data-s]").forEach(function (el) { el.onclick = function () { closeSheet(); onPick(el.getAttribute("data-s")); }; });
+  }
 
-    var opts = targets.map(function (t) { return '<option value="' + esc(t.id) + '"' + (UI.giftTarget === t.id ? " selected" : "") + ">" + esc(t.label) + "</option>"; }).join("");
-    var grid = activeGifts.map(function (g) {
-      var price = Number(g.p || GIFT_COIN_PRICES[g.id] || 10), lockedVip = Number(g.vipMin || 0) > myVip;
-      return '<div class="gitem' + (UI.giftSel === g.id ? " sel" : "") + (lockedVip ? " locked-gift" : "") + '" data-g="' + esc(g.id) + '"><b>' + esc(g.e) + '</b><span>' + esc(g.n) + "</span><small>" + (lockedVip ? "🔒 VIP " + g.vipMin : (price.toLocaleString("en-US") + " 🪙")) + "</small></div>";
-    }).join("");
+  function openGiftSheet(preselectedTargetId) {
+    var r = getRoom(UI.roomId || UI.floatingRoomId), targets = [];
+    if (r) {
+      var seen = {};
+      r.seats.forEach(function (s, i) {
+        if (s.uid && s.uid !== S.me.id && !seen[s.uid] && !isBlockedEitherWay(s.uid)) {
+          seen[s.uid] = true;
+          targets.push({ id: s.uid, label: resolveLiveUser(s.uid).name + " (#" + (i + 1) + ")" });
+        }
+      });
+      (r.listeners || []).forEach(function (lid) {
+        if (lid && lid !== S.me.id && !seen[lid] && !isBlockedEitherWay(lid)) {
+          seen[lid] = true;
+          targets.push({ id: lid, label: resolveLiveUser(lid).name + " (مستمع)" });
+        }
+      });
+    }
+    if (preselectedTargetId && preselectedTargetId !== S.me.id && !isBlockedEitherWay(preselectedTargetId) && !targets.some(function (t) { return t.id === preselectedTargetId; })) {
+      targets.unshift({ id: preselectedTargetId, label: resolveLiveUser(preselectedTargetId).name });
+    }
+    if (!targets.length) { toast("لا يوجد مستخدمون آخرون متاحون للإهداء حالياً"); return; }
+    UI.giftTarget = (preselectedTargetId && targets.some(function (t) { return t.id === preselectedTargetId; })) ? preselectedTargetId : targets[0].id;
+    var myVip = getEffectiveVip(S.me), gifts = getActiveGifts();
+    if (!gifts.some(function (g) { return g.id === UI.giftSel; })) UI.giftSel = gifts[0].id;
 
-    openSheet("<h3>🎁 إرسال هدية</h3><div class='gift-balance-bar'><span>رصيدك الحالي:</span><strong id='gift-sheet-coins'>" + myCoins.toLocaleString("en-US") + " 🪙</strong></div><label>إلى</label><select id='g-to'>" + opts + "</select><div class='ggrid'>" + grid + "</div><button class='btn block' id='g-send' type='button'>إرسال الهدية</button>");
-    $("g-to").onchange = function () { UI.giftTarget = this.value; };
-    $("sheet").querySelectorAll(".gitem").forEach(function (el) {
+    var coinBal = Math.max(0, Number(S && S.me && S.me.coins || 0));
+    openSheet("<h3>🎁 إرسال هدية</h3><div class='rv-gift-wallet'>رصيدك الحالي: <b id='gift-sheet-coins'>" + coinBal.toLocaleString("en-US") + "</b> 🪙</div><label>اختر المستلم</label><div class='gift-targets-bar'>" + targets.map(function (t) { var tu = resolveLiveUser(t.id); return '<button class="gt-photo ' + (t.id === UI.giftTarget ? "sel" : "") + '" data-gt="' + esc(t.id) + '" type="button">' + avatarHTML(tu, "sm") + '<span>' + esc(tu.name || t.label) + '</span></button>'; }).join("") + "</div><label>اختر الهدية</label><div class='giftgrid'>" + gifts.map(function (g) { var price = Number(g.p != null ? g.p : (GIFT_COIN_PRICES[g.id] || 10)); return '<div class="gift ' + (g.id === UI.giftSel ? "sel" : "") + '" data-g="' + esc(g.id) + '"><div class="e">' + g.e + "</div><small>" + esc(g.n) + '</small><span class="p">' + price + " 🪙</span></div>"; }).join("") + "</div><button class='btn gold block' id='send-gift-go' type='button'>إرسال الهدية الآن 🎁</button>");
+
+    $("sheet").querySelectorAll("[data-gt]").forEach(function (el) {
       el.onclick = function () {
-        var gid = el.getAttribute("data-g"), gObj = activeGifts.find(function (x) { return x.id === gid; });
-        if (gObj && Number(gObj.vipMin || 0) > getEffectiveVip(S.me)) { toast("هذه الهدية تتطلب عضوية VIP " + gObj.vipMin); return; }
-        UI.giftSel = gid;
-        $("sheet").querySelectorAll(".gitem").forEach(function (x) { x.classList.toggle("sel", x === el); });
+        UI.giftTarget = el.getAttribute("data-gt");
+        $("sheet").querySelectorAll("[data-gt]").forEach(function (x) { x.classList.toggle("sel", x === el); });
       };
     });
-    $("g-send").onclick = async function () {
-      var btn = $("g-send");
+    $("sheet").querySelectorAll("[data-g]").forEach(function (el) {
+      el.onclick = function () {
+        UI.giftSel = el.getAttribute("data-g");
+        $("sheet").querySelectorAll("[data-g]").forEach(function (x) { x.classList.toggle("sel", x === el); });
+      };
+    });
+
+    $("send-gift-go").onclick = async function () {
+      var btn = $("send-gift-go");
       if (btn.disabled) return;
-      var to = $("g-to").value;
-      var g = activeGifts.find(function (x) { return x.id === UI.giftSel; }) || activeGifts[0];
-      if (!to || !g) return;
-      if (isBlockedEitherWay(to)) { toast("تعذر إرسال الهدية لوجود حظر"); return; }
-      if (Number(g.vipMin || 0) > getEffectiveVip(S.me)) { toast("هذه الهدية تتطلب عضوية VIP " + g.vipMin); return; }
-      var price = Number(g.p || GIFT_COIN_PRICES[g.id] || 10);
-      if (UI.isGuest) { toast("إرسال الهدايا بالعملات متاح للحسابات المسجلة فقط"); return; }
-      if (Number(S.me.coins || 0) < price) { toast("رصيد عملاتك غير كافٍ لإرسال هذه الهدية"); return; }
-      btn.disabled = true; btn.textContent = "جاري الإرسال...";
-      var apiRes = await callEconomyApi("sendGift", { roomId: r.id, toUid: to, giftId: g.id, emoji: g.e, giftName: g.n, amount: price });
-      if (!apiRes.ok) { btn.disabled = false; btn.textContent = "إرسال الهدية"; toast(apiRes.error || "تعذر إرسال الهدية"); return; }
-      S.me.coins = Math.max(0, Number(apiRes.balance != null ? apiRes.balance : (Number(S.me.coins || 0) - price)));
-      S.me.xp = Number(S.me.xp || 0) + Math.max(5, Math.round(price / 5));
-      S.me.level = computeLevelFromXp(S.me.xp);
-      S.me.gifts = Number(S.me.gifts || 0) + 1;
-      var toName = resolveLiveUser(to).name;
-      pushRoomMsg(r, { from: S.me.id, name: S.me.name, gift: g.e, text: "أرسل " + g.n + " (" + price.toLocaleString("en-US") + " 🪙) إلى " + toName });
-      if (cloud.on && cloud.db && !UI.isGuest) {
-        var gEvRef = cloud.db.ref("giftEvents/" + r.id).push();
-        if (gEvRef && gEvRef.key) seenGiftEventIds[gEvRef.key] = true;
-        gEvRef.set({ fromUid: S.me.id, fromName: S.me.name || "مستخدم", fromPhoto: S.me.photo || "", toUid: to, toName: toName, giftId: g.id, giftName: g.n, emoji: g.e, coins: price, count: 1, createdAt: serverTs() }).catch(function () { /* */ });
+      var g = gifts.find(function (x) { return x.id === UI.giftSel; }) || gifts[0];
+      if (!g) return;
+      var gPrice = Number(g.p != null ? g.p : (GIFT_COIN_PRICES[g.id] || 10));
+      if (Number(g.vipMin || 0) > myVip) {
+        toast("هذه الهدية تتطلب عضوية VIP " + g.vipMin + " أو أعلى");
+        return;
       }
-      showFlyGiftToSeat(g.e, S.me.name || "مستخدم", to, toName);
-      save(); closeSheet(); renderRoom(); renderTop();
-      toast("تم إرسال " + g.n + " بنجاح 🎁");
+      if (!UI.giftTarget || UI.giftTarget === S.me.id) {
+        toast("اختر مستلماً آخر");
+        return;
+      }
+      if (isBlockedEitherWay(UI.giftTarget)) {
+        toast("تعذر إرسال الهدية بسبب وجود حظر");
+        return;
+      }
+      var targetU = resolveLiveUser(UI.giftTarget);
+      if (UI.isGuest) {
+        toast("إرسال الهدايا بالعملات متاح للحسابات المسجلة فقط");
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "جارٍ الإرسال...";
+      var apiRes = await callEconomyApi("sendGift", {
+        toUid: UI.giftTarget,
+        giftId: g.id,
+        giftName: g.n,
+        emoji: g.e,
+        price: gPrice,
+        roomId: r ? r.id : null
+      });
+      if (!apiRes.ok) {
+        toast(apiRes.error || "رصيدك غير كافٍ أو تعذر إرسال الهدية");
+        btn.disabled = false;
+        btn.textContent = "إرسال الهدية الآن 🎁";
+        return;
+      }
+      if (apiRes.balance != null) {
+        S.me.coins = Math.max(0, Number(apiRes.balance || 0));
+      } else {
+        S.me.coins = Math.max(0, Number(S.me.coins || 0) - gPrice);
+      }
+      S.me.xp = Number(S.me.xp || 0) + Math.max(5, Math.round(gPrice / 5));
+      var eventId = apiRes.eventId || ("gift_" + now() + "_" + Math.random().toString(36).slice(2, 7));
+      seenGiftEventIds[eventId] = true;
+      save();
+      closeSheet();
+      renderTop();
+      if (UI.page === "profile") renderProfile();
+      if (UI.roomId) renderRoom();
+      if (r) {
+        pushRoomMsg(r, {
+          from: S.me.id,
+          fromName: S.me.name || "مستخدم",
+          text: "أهدى " + g.e + " " + g.n + " (" + gPrice + " 🪙) إلى " + targetU.name,
+          gift: { eventId: eventId, emoji: g.e, fromUid: S.me.id, fromName: S.me.name || "مستخدم", toUid: UI.giftTarget, toName: targetU.name }
+        });
+      }
+      showFlyGiftToSeat(g.e, S.me.name || "مستخدم", UI.giftTarget, targetU.name);
+      toast("تم إرسال " + g.e + " " + g.n + " إلى " + targetU.name + " ✅");
     };
   }
 
   function openUserProfileSheet(targetId) {
     if (!targetId) return;
     if (targetId === S.me.id) { go("profile"); return; }
-    if (isBlockedByUser(targetId)) { toast("هذا الحساب غير متاح"); return; }
     var u = resolveLiveUser(targetId), vipLv = getEffectiveVip(u), rel = getRelationshipStatus(targetId), curRoom = findUserCurrentRoom(targetId);
-    var actionsHtml = "";
-    if (rel.state === "blocked_by_me") {
-      actionsHtml = '<button class="btn ok" id="ups-unblock" type="button">🔓 إلغاء الحظر</button>';
-    } else {
-      actionsHtml += '<button class="btn ghost" id="ups-follow" type="button">' + (rel.following ? "إلغاء المتابعة" : "+ متابعة") + "</button>";
+    var rawMap = (u && u.receivedGifts && typeof u.receivedGifts === "object") ? u.receivedGifts : {}, maps = getGiftMaps(), gItems = [];
+    Object.keys(rawMap).forEach(function (k) {
+      var qty = Math.max(0, Math.floor(Number(rawMap[k] || 0)));
+      if (!qty) return;
+      var def = maps.byId[k] || maps.byEmoji[k];
+      gItems.push('<span class="tag">' + (def ? def.e + " " + esc(def.n) : "🎁 " + esc(k)) + " ×" + qty + "</span>");
+    });
+
+    var actionButtonsHtml = "";
+    if (rel.state === "blocked_by_me") actionButtonsHtml = '<button class="btn sm ok" data-unblock-user="' + esc(targetId) + '" type="button">🔓 إلغاء الحظر</button>';
+    else if (rel.state === "blocked_by_them") actionButtonsHtml = '<span class="tag">الحساب غير متاح</span>';
+    else {
+      actionButtonsHtml += '<button class="btn sm ghost" data-follow-user="' + esc(targetId) + '" type="button">' + (rel.following ? "إلغاء المتابعة" : "+ متابعة") + "</button>";
       if (rel.state === "friends") {
-        actionsHtml += '<button class="btn" id="ups-dm" type="button">💬 مراسلة خاصة</button><button class="btn red" id="ups-remove-friend" type="button">إزالة الصديق</button>';
-      } else if (rel.state === "request_sent") actionsHtml += '<button class="btn ghost" id="ups-cancel-req" type="button">طلب مرسل (إلغاء)</button>';
-      else if (rel.state === "request_received") actionsHtml += '<button class="btn ok" id="ups-accept-req" type="button">قبول الطلب</button><button class="btn ghost" id="ups-reject-req" type="button">رفض</button>';
-      else actionsHtml += '<button class="btn" id="ups-add-friend" type="button">+ إضافة صديق</button>';
-      if (UI.roomId || UI.floatingRoomId) actionsHtml += '<button class="btn gold" id="ups-gift" type="button">🎁 إرسال هدية</button>';
-      actionsHtml += '<button class="btn red" id="ups-block" type="button">🚫 حظر</button><button class="btn ghost" id="ups-report" type="button">🚩 إبلاغ</button>';
+        actionButtonsHtml += '<button class="btn sm" data-dm="' + esc(targetId) + '" type="button">💬 مراسلة خاصة</button><button class="btn sm red" data-remove-friend="' + esc(targetId) + '" type="button">إزالة الصديق</button>';
+      } else if (rel.state === "request_sent") actionButtonsHtml += '<button class="btn sm ghost" data-cancelfreq="' + esc(targetId) + '" type="button">طلب صداقة مرسل (إلغاء)</button>';
+      else if (rel.state === "request_received") actionButtonsHtml += '<button class="btn sm ok" data-accept="' + esc(targetId) + '" type="button">قبول طلب الصداقة</button><button class="btn sm ghost" data-reject="' + esc(targetId) + '" type="button">رفض</button>';
+      else actionButtonsHtml += '<button class="btn sm" data-addfriend="' + esc(targetId) + '" type="button">+ إضافة صديق</button>';
+      actionButtonsHtml += '<button class="btn sm gold" data-gift-to="' + esc(targetId) + '" type="button">🎁 إرسال هدية</button><button class="btn sm red" data-block-user="' + esc(targetId) + '" type="button">🚫 حظر</button><button class="btn sm ghost" id="prof-report-btn" type="button">🚩 إبلاغ</button>';
     }
 
-    openSheet('<div class="ups-head">' + avatarHTML(u, "lg") + '<div class="info"><div class="' + (vipLv >= 2 ? "name vip-gold" : "name") + '" style="font-size:17px">' + esc(u.name) + (vipLv > 0 ? ' <span class="tag vip">VIP ' + vipLv + "</span>" : "") + (u.verified ? ' <span class="tag verified">✓ موثق</span>' : "") + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (u.online ? "🟢 متصل الآن" : "⚫ غير متصل") + '</div><div class="meta" style="margin-top:3px">العلاقة: <b>' + esc(rel.label) + "</b>" + (curRoom ? " • 🎙️ في غرفة: <b>" + esc(curRoom.name) + "</b>" : "") + "</div></div></div>" +
-      '<div class="ups-bio">' + esc(u.bio || "مرحباً بك في REAL VOICE") + "</div>" +
-      '<div class="stats-grid"><div class="stat-box"><b>Lv.' + computeLevelFromXp(u.xp || 0) + '</b><span>المستوى</span></div><div class="stat-box"><b>' + Number(u.followersCount || 0) + '</b><span>المتابعون</span></div><div class="stat-box"><b>' + Number(u.friendsCount || 0) + '</b><span>الأصدقاء</span></div></div>' +
-      '<div class="ups-actions">' + actionsHtml + "</div>");
+    openSheet('<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">' + avatarHTML(u, "lg") + '<div class="info"><div class="' + (vipLv >= 2 ? "name vip-gold" : "name") + '" style="font-size:17px">' + esc(u.name) + (vipLv > 0 ? ' <span class="tag vip">VIP ' + vipLv + "</span>" : "") + (u.verified ? ' <span class="tag verified">✓</span>' : "") + '</div><div class="meta">ID: ' + esc(displayUserId(u)) + ' • <span class="tag rel">' + esc(rel.label) + "</span></div>" + (u.gender || u.age ? '<div class="meta">' + (u.gender ? esc(u.gender) : "") + (u.gender && u.age ? " • " : "") + (u.age ? esc(u.age) + " سنة" : "") + "</div>" : "") + (curRoom ? '<span class="room-pill-tag" data-enter="' + esc(curRoom.id) + '">🎙️ متواجد في: ' + esc(curRoom.name) + "</span>" : "") + '</div></div><div class="pf-bio-box" style="margin-bottom:10px">' + esc(u.bio || "لا توجد نبذة تعريفية") + '</div><div class="stats-grid"><div class="stat-box"><b>' + Number(u.followersCount || 0) + '</b><span>المتابعون</span></div><div class="stat-box"><b>' + Number(u.followingCount || 0) + '</b><span>أتابع</span></div><div class="stat-box"><b>' + Number(u.friendsCount || 0) + "</b><span>الأصدقاء</span></div></div>" + (gItems.length ? '<div style="margin-bottom:10px"><label>🎁 هدايا الحساب</label><div style="display:flex;gap:6px;flex-wrap:wrap">' + gItems.join("") + "</div></div>" : "") + '<div class="row-actions">' + actionButtonsHtml + "</div>");
 
-    if ($("ups-follow")) $("ups-follow").onclick = async function () { this.disabled = true; await toggleFollowUser(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-add-friend")) $("ups-add-friend").onclick = async function () { this.disabled = true; await sendFriendRequest(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-cancel-req")) $("ups-cancel-req").onclick = async function () { this.disabled = true; await cancelFriendRequest(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-accept-req")) $("ups-accept-req").onclick = async function () { this.disabled = true; await acceptFriendRequest(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-reject-req")) $("ups-reject-req").onclick = async function () { this.disabled = true; await rejectFriendRequest(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-remove-friend")) $("ups-remove-friend").onclick = async function () { this.disabled = true; await removeFriend(targetId); openUserProfileSheet(targetId); };
-    if ($("ups-dm")) $("ups-dm").onclick = function () { closeSheet(); openDM(targetId); };
-    if ($("ups-gift")) $("ups-gift").onclick = function () { closeSheet(); openGiftSheet(targetId); };
-    if ($("ups-block")) $("ups-block").onclick = function () { confirmBlockUserSheet(targetId, function () { openUserProfileSheet(targetId); }); };
-    if ($("ups-unblock")) $("ups-unblock").onclick = function () { confirmUnblockUserSheet(targetId, function () { openUserProfileSheet(targetId); }); };
-    if ($("ups-report")) {
-      $("ups-report").onclick = function () {
-        openSheet("<h3>🚩 إبلاغ عن «" + esc(u.name) + "»</h3><label>سبب البلاغ</label><select id='rep-reason'><option value='إساءة لفظية أو مضايقة'>إساءة لفظية أو مضايقة</option><option value='محتوى غير لائق'>محتوى غير لائق</option><option value='إزعاج في الغرفة الصوتية'>إزعاج في الغرفة الصوتية</option><option value='حساب مزيف أو سبام'>حساب مزيف أو سبام</option></select><button class='btn red block' id='rep-send' type='button'>إرسال البلاغ</button>");
-        $("rep-send").onclick = function () { submitUserReport(targetId, $("rep-reason").value); closeSheet(); };
+    if ($("prof-report-btn")) {
+      $("prof-report-btn").onclick = function () {
+        var reason = prompt("اكتب سبب البلاغ ضد " + u.name + ":");
+        if (reason && reason.trim()) { submitUserReport(targetId, reason.trim()); closeSheet(); }
       };
     }
   }
 
-  function openDM(id) {
-    if (!id || id === S.me.id) return;
-    if (isBlockedEitherWay(id)) { toast("لا يمكن المراسلة بسبب وجود حظر"); return; }
-    if (!isFriendWith(id)) { toast("الرسائل الخاصة متاحة بين الأصدقاء فقط — أرسل طلب صداقة أولاً"); return; }
-    closeSheet(); UI.dmId = id; S.unread[id] = 0;
-    if (!Array.isArray(S.dms[id])) S.dms[id] = [];
-    attachDmThreadListener(S.me.id, id, UI.dmLimits[id] || CONFIG.dmInitialLimit);
-    markThreadMessagesRead(id);
-    var u = resolveLiveUser(id);
-    $("dm-name").textContent = u.name;
-    $("dm-status").textContent = u.online ? "🟢 متصل الآن" : "⚫ غير متصل";
-    setAvatarEl($("dm-avatar"), u);
-    $("chat-view").classList.add("open");
-    renderDM(); renderTop();
-  }
-
-  function closeDM() {
-    if (isRecordingDm && dmRecorder) { try { dmRecorder.stop(); } catch (e) { /* */ } isRecordingDm = false; }
-    UI.dmId = null;
-    if ($("chat-view")) $("chat-view").classList.remove("open");
-    renderTop();
-  }
-
   function markThreadMessagesRead(peerId) {
-    if (!peerId || !cloud.on || !cloud.db || UI.isGuest || !S || !S.me || !S.me.id) return;
-    var tid = dmThreadId(S.me.id, peerId), thread = S.dms[peerId] || [];
-    thread.forEach(function (m) {
-      if (m && m.key && m.from === peerId && !m.read) {
-        m.read = true;
-        cloud.db.ref("dms/" + tid + "/" + m.key).update({ read: true, status: "read" }).catch(function () { /* */ });
+    if (!peerId) return;
+    S.unread[peerId] = 0;
+    var list = S.dms[peerId] || [], tid = dmThreadId(S.me.id, peerId);
+    list.forEach(function (m) {
+      if (m && m.from !== S.me.id && !m.read) {
+        m.read = true; m.status = "seen";
+        if (cloud.on && cloud.db && !UI.isGuest && m.key) cloud.db.ref("dms/" + tid + "/" + m.key).update({ read: true, status: "seen" }).catch(function () { /* */ });
       }
     });
   }
 
+  function openDM(id) {
+    if (!id || id === S.me.id) return;
+    if (isBlockedEitherWay(id)) { toast("لا يمكنك فتح محادثة لوجود حظر"); return; }
+    if (!isFriendWith(id)) { toast("المحادثة الخاصة متاحة للأصدقاء فقط — أرسل طلب صداقة أولاً"); return; }
+    closeSheet();
+    if (UI.roomId) minimizeRoomToFloatingOrb();
+    UI.dmId = id;
+    if (!UI.dmLimits[id]) UI.dmLimits[id] = CONFIG.dmInitialLimit;
+    if (!Array.isArray(S.dms[id])) S.dms[id] = [];
+    markThreadMessagesRead(id);
+    if (cloud.on && cloud.db && !UI.isGuest) {
+      cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true).catch(function () { /* */ });
+      cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true).catch(function () { /* */ });
+      attachDmThreadListener(S.me.id, id, UI.dmLimits[id]);
+    }
+    var u = resolveLiveUser(id);
+    setAvatarEl($("chat-avatar"), u);
+    $("chat-title").textContent = u.name;
+    $("chat-sub").textContent = "صديق • ID: " + displayUserId(u) + " • " + (u.online ? "متصل" : "غير متصل");
+    $("chat-view").classList.add("open");
+    saveLocal(); renderDM(); renderTop();
+  }
+
+  function closeDM() {
+    UI.dmId = null;
+    if ($("chat-view")) $("chat-view").classList.remove("open");
+    renderMessages(); renderTop();
+  }
+
   function renderDM() {
     var id = UI.dmId; if (!id) return;
-    var box = $("dm-msgs"), list = S.dms[id] || [];
-    var loadMoreHtml = list.length >= (UI.dmLimits[id] || CONFIG.dmInitialLimit)
-      ? '<div style="text-align:center;margin-bottom:8px"><button class="btn sm ghost" id="dm-load-older-btn" type="button">⬆️ تحميل رسائل أقدم</button></div>' : "";
-    box.innerHTML = loadMoreHtml + list.map(function (m) {
-      var mine = m.from === S.me.id, cls = "chat-msg " + (mine ? "me" : "them"), body = "";
-      if (m.img) body += '<img src="' + esc(m.img) + '" alt="" style="max-width:190px;border-radius:10px;display:block;margin-bottom:4px" />';
-      if (m.audio) body += '<audio controls src="' + esc(m.audio) + '" style="max-width:210px;height:34px;display:block;margin-bottom:4px"></audio>';
-      if (m.text) body += "<div>" + esc(clean(m.text)) + "</div>";
-      if (m.inviteRoomId) body += '<button class="btn sm ok" style="margin-top:6px" data-join-invite="' + esc(m.inviteRoomId) + '" type="button">🎙️ انضمام للغرفة</button>';
-      var statusTick = mine ? (' <span class="msg-tick ' + (m.read ? "read" : "") + '">' + (m.read ? "✓✓" : "✓") + "</span>") : "";
-      return '<div class="' + cls + '">' + body + '<span class="chat-t">' + timeStr(m.t) + statusTick + "</span></div>";
+    if (!isFriendWith(id) || isBlockedEitherWay(id)) { closeDM(); return; }
+    var box = $("chat-msgs"), list = (S.dms[id] || []).filter(function (m) { return !m.from || !isBlockedEitherWay(m.from); });
+    var olderBtn = list.length >= (UI.dmLimits[id] || CONFIG.dmInitialLimit) ? '<button class="btn sm ghost" id="dm-load-older" style="align-self:center;margin-bottom:6px" type="button">⬆️ تحميل رسائل أقدم</button>' : "";
+    box.innerHTML = olderBtn + list.map(function (m) {
+      var me = m.from === S.me.id, body = "";
+      if (m.audio) body = '<audio controls src="' + esc(m.audio) + '" style="max-width:210px;height:34px"></audio>';
+      else if (m.img) body = '<img src="' + esc(m.img) + '" style="max-width:190px;border-radius:10px;display:block" loading="lazy" />';
+      else {
+        body = esc(m.text);
+        if (m.inviteRoomId) body += '<div><button class="invite-join-chip" data-join-invite="' + esc(m.inviteRoomId) + '" type="button">🎙️ دخول الغرفة</button></div>';
+      }
+      var stIcon = me ? (m.read || m.status === "seen" ? " ✓✓" : " ✓") : "";
+      return '<div class="msg ' + (me ? "me" : "") + '"><div>' + body + '</div><div class="tm">' + timeStr(m.t) + stIcon + "</div></div>";
     }).join("");
-    if ($("dm-load-older-btn")) {
-      $("dm-load-older-btn").onclick = function () {
-        var nextLim = (UI.dmLimits[id] || CONFIG.dmInitialLimit) + CONFIG.dmPageStep;
-        UI.dmLimits[id] = nextLim; delete UI.activeDmListenerLimits[dmThreadId(S.me.id, id)];
-        attachDmThreadListener(S.me.id, id, nextLim);
+    if ($("dm-load-older")) {
+      $("dm-load-older").onclick = function () {
+        UI.dmLimits[id] = (UI.dmLimits[id] || CONFIG.dmInitialLimit) + CONFIG.dmPageStep;
+        attachDmThreadListener(S.me.id, id, UI.dmLimits[id]);
       };
     }
+    box.querySelectorAll("[data-join-invite]").forEach(function (btn) {
+      btn.onclick = function () { var rid = btn.getAttribute("data-join-invite"); closeDM(); enterRoom(rid); };
+    });
     box.scrollTop = box.scrollHeight;
   }
 
-  function sendDM(extra) {
+  async function sendDM(payload) {
     var id = UI.dmId; if (!id) return;
-    if (isBlockedEitherWay(id)) { toast("لا يمكن إرسال رسائل بسبب وجود حظر"); return; }
-    if (!isFriendWith(id)) { toast("الرسائل الخاصة متاحة بين الأصدقاء فقط"); return; }
+    if (isBlockedEitherWay(id)) { toast("لا يمكن الإرسال لوجود حظر"); return; }
+    if (!isFriendWith(id)) { toast("المحادثة الخاصة متاحة للأصدقاء فقط"); closeDM(); return; }
     if (!allowActionRateLimit()) return;
-    var inp = $("dm-input"), txt = extra && extra.text != null ? extra.text : inp.value.trim();
-    if (!txt && !(extra && (extra.img || extra.audio))) return;
-    var msg = Object.assign({ from: S.me.id, to: id, text: txt, status: "sent", read: false, t: now() }, extra || {});
+    var msgObj = typeof payload === "string" ? { text: clean(payload.trim()) } : Object.assign({}, payload);
+    if (msgObj.text !== undefined && !msgObj.text && !msgObj.img && !msgObj.audio) return;
+    msgObj.from = S.me.id; msgObj.to = id; msgObj.status = "sent"; msgObj.read = false; msgObj.t = now();
     if (!Array.isArray(S.dms[id])) S.dms[id] = [];
-    S.dms[id].push(msg);
-    if (!extra || extra.text != null) inp.value = "";
-    renderDM(); renderMessages(); saveLocal();
+    S.dms[id].push(msgObj);
+    saveLocal(); renderDM(); renderMessages();
     if (cloud.on && cloud.db && !UI.isGuest) {
-      var tid = dmThreadId(S.me.id, id);
-      cloud.db.ref("dms/" + tid).push(msg).then(function (ref) {
-        if (ref && ref.key) msg.key = ref.key;
-        cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true).catch(function () { /* */ });
-        cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true).catch(function () { /* */ });
-      }).catch(function () { toast("تعذر إرسال الرسالة للسحابة"); });
+      try {
+        var tid = dmThreadId(S.me.id, id);
+        await cloud.db.ref("userDms/" + S.me.id + "/" + id).set(true);
+        await cloud.db.ref("userDms/" + id + "/" + S.me.id).set(true);
+        var pushed = await cloud.db.ref("dms/" + tid).push(msgObj);
+        msgObj.key = pushed.key;
+        saveLocal();
+      } catch (e) { toast("تعذر إرسال الرسالة سحابياً"); }
     }
   }
 
-  function openNotifs() {
-    var list = (S.notifs || []).filter(function (n) { return !n.actorId || !isBlockedEitherWay(n.actorId); });
+  async function toggleDmVoiceNote() {
+    if (!UI.dmId) return;
+    if (!isFriendWith(UI.dmId) || isBlockedEitherWay(UI.dmId)) { toast("الإرسال الصوتي متاح للأصدقاء غير المحظورين فقط"); return; }
+    var btn = $("chat-voice");
+    if (!isRecordingDm) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast("المتصفح لا يدعم تسجيل الصوت"); return; }
+      try {
+        var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        dmChunks = [];
+        dmRecorder = new MediaRecorder(stream);
+        dmRecorder.ondataavailable = function (ev) { if (ev.data && ev.data.size > 0) dmChunks.push(ev.data); };
+        dmRecorder.onstop = function () {
+          stream.getTracks().forEach(function (tr) { tr.stop(); });
+          var blob = new Blob(dmChunks, { type: "audio/webm" });
+          if (blob.size > 900000) { toast("الرسالة الصوتية طويلة جداً"); return; }
+          var reader = new FileReader();
+          reader.onload = function () { sendDM({ audio: String(reader.result || "") }); };
+          reader.readAsDataURL(blob);
+        };
+        dmRecorder.start(); isRecordingDm = true;
+        if (btn) btn.classList.add("rec-on");
+        toast("🎙️ جاري التسجيل... اضغط مرة أخرى للإرسال");
+      } catch (e) { toast("تعذر الوصول للميكروفون"); }
+    } else {
+      isRecordingDm = false;
+      if (btn) btn.classList.remove("rec-on");
+      try { if (dmRecorder && dmRecorder.state !== "inactive") dmRecorder.stop(); } catch (e) { /* */ }
+    }
+  }
+
+  function openNotifications() {
+    var list = S.notifs || [];
     (S.notifs || []).forEach(function (n) { n.read = true; });
     saveLocal(); renderTop();
-    var html = list.length ? list.map(function (n) {
+    openSheet("<h3>🔔 الإشعارات</h3>" + (list.length ? '<div class="list">' + list.slice(0, 25).map(function (n) {
       return '<div class="row glass"><div class="info"><div class="name">' + esc(n.text) + '</div><div class="meta">' + timeStr(n.t) + "</div></div></div>";
-    }).join("") : '<div class="empty">لا توجد إشعارات بعد</div>';
-    openSheet("<h3>🔔 الإشعارات</h3><div class='list'>" + html + "</div>");
+    }).join("") + '</div><button class="btn sm ghost block" id="clear-notifs" type="button">مسح الإشعارات</button>' : '<div class="empty">لا توجد إشعارات بعد</div>'));
+    if ($("clear-notifs")) {
+      $("clear-notifs").onclick = function () { S.notifs = []; saveLocal(); renderTop(); openNotifications(); };
+    }
   }
 
   function bindEvents() {
-    document.querySelectorAll(".navbtn").forEach(function (b) { b.onclick = function () { go(b.getAttribute("data-page")); }; });
-    if ($("avatar-top")) $("avatar-top").onclick = function () { go("profile"); };
-    if ($("notif-btn")) $("notif-btn").onclick = openNotifs;
-    if ($("theme-toggle-btn")) {
-      $("theme-toggle-btn").onclick = function () {
-        S.settings.lightTheme = !S.settings.lightTheme;
-        applyThemeMode(); saveLocal(); renderTop();
-      };
-    }
-    if ($("gift-cup-banner")) $("gift-cup-banner").onclick = openGiftCupSheet;
-    if ($("gift-cup-back-btn")) $("gift-cup-back-btn").onclick = closeGiftCupPage;
-    if ($("floating-room-orb")) {
-      $("floating-room-orb").onclick = function () {
-        if (UI.floatingRoomId) { var rid = UI.floatingRoomId; UI.floatingRoomId = null; renderFloatingOrb(); enterRoom(rid, true); }
-      };
-    }
-
-    if ($("google-login-btn")) $("google-login-btn").onclick = signInWithGoogleApp;
-    if ($("guest-login-btn")) $("guest-login-btn").onclick = startWithoutGoogle;
-    if ($("ob-photo-input")) {
-      $("ob-photo-input").onchange = async function () {
-        var f = this.files && this.files[0]; if (!f) return;
-        try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 180, 0.55); renderOnboardPreview(); toast("تم اختيار الصورة الشخصية ✅"); }
-        catch (e) { setOnboardError(e.message); toast(e.message); }
-      };
-    }
+    $("google-login-btn").onclick = signInWithGoogleApp;
+    $("guest-login-btn").onclick = startWithoutGoogle;
+    $("ob-back-login-btn").onclick = async function () {
+      setGuestSession(false); UI.googleUser = null;
+      if (cloud.on && cloud.auth && cloud.auth.currentUser) { try { await cloud.auth.signOut(); } catch (e) { /* */ } }
+      showAuthGate(true, "login");
+    };
+    $("ob-photo-input").onchange = async function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      try { UI.onboardPhoto = await readImageFileAsDataUrl(f, 180, 0.55); renderOnboardPreview(); toast("تم اختيار الصورة الشخصية ✅"); }
+      catch (e) { setOnboardError(e.message); toast(e.message); }
+    };
+    $("ob-name").oninput = renderOnboardPreview;
     document.querySelectorAll(".gender-pill").forEach(function (pill) {
       pill.onclick = function () {
         UI.onboardGender = pill.getAttribute("data-gender") || "ذكر";
         document.querySelectorAll(".gender-pill").forEach(function (p) { p.classList.toggle("active", p === pill); });
       };
     });
-    if ($("ob-name")) $("ob-name").oninput = renderOnboardPreview;
-    if ($("ob-submit-btn")) $("ob-submit-btn").onclick = completeOnboarding;
-    if ($("ob-back-login-btn")) {
-      $("ob-back-login-btn").onclick = function () {
-        if (UI.googleUser) signOutApp();
-        else { setGuestSession(false); showAuthGate(true, "login"); }
-      };
-    }
+    $("ob-submit-btn").onclick = completeOnboarding;
 
-    if ($("search-input")) {
-      $("search-input").oninput = function () { UI.query = this.value; renderHome(); };
-    }
-    if ($("search-clear-btn")) {
-      $("search-clear-btn").onclick = function () { UI.query = ""; if ($("search-input")) $("search-input").value = ""; renderHome(); };
-    }
-    document.querySelectorAll("#home-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.filter = t.getAttribute("data-filter"); renderHome(); };
-    });
-    if ($("fab-create")) $("fab-create").onclick = openCreateRoom;
-    document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); };
-    });
+    document.querySelectorAll(".navbtn").forEach(function (b) { b.onclick = function () { go(b.getAttribute("data-page")); }; });
+    $("avatar-top").onclick = function () { go("profile"); };
+    $("theme-toggle-btn").onclick = function () {
+      S.settings.lightTheme = !S.settings.lightTheme;
+      applyThemeMode(); saveLocal(); renderTop();
+    };
+    $("notif-btn").onclick = openNotifications;
+    if ($("gift-cup-banner")) $("gift-cup-banner").onclick = openGiftCupSheet;
+    if ($("gift-cup-back")) $("gift-cup-back").onclick = closeGiftCupPage;
 
-    document.querySelectorAll("#friends-tabs .tab").forEach(function (t) {
-      t.onclick = function () { UI.ftab = t.getAttribute("data-ftab"); renderFriends(); };
-    });
-    if ($("find-input")) $("find-input").oninput = function () { UI.findQ = this.value; renderFriends(); };
+    $("search-input").oninput = function () { UI.query = this.value; renderHome(); };
+    $("search-go-btn").onclick = function () { UI.query = $("search-input").value; renderHome(); };
+    $("search-clear-btn").onclick = function () { $("search-input").value = ""; UI.query = ""; renderHome(); };
+    document.querySelectorAll("#home-tabs .tab").forEach(function (t) { t.onclick = function () { UI.filter = t.getAttribute("data-filter"); renderHome(); }; });
+    $("refresh-rooms").onclick = function () { renderHome(); toast("تم تحديث الغرف"); };
+
+    document.querySelectorAll("#rooms-tabs .tab").forEach(function (t) { t.onclick = function () { UI.rfilter = t.getAttribute("data-rfilter"); renderRooms(); }; });
+    $("fab-create").onclick = openCreateRoom;
+
+    document.querySelectorAll("#friends-tabs .tab").forEach(function (t) { t.onclick = function () { UI.ftab = t.getAttribute("data-ftab"); renderFriends(); }; });
+    $("find-input").oninput = function () { UI.findQ = this.value; renderFriends(); };
 
     document.querySelectorAll("#profile-subtabs .tab").forEach(function (t) {
       t.onclick = function () {
-        UI.pftab = t.getAttribute("data-pftab"); UI.pfSocialLimit = CONFIG.socialPageSize; UI.pfSocialQ = "";
+        UI.pftab = t.getAttribute("data-pftab") || "overview";
+        UI.pfSocialQ = ""; UI.pfSocialLimit = CONFIG.socialPageSize;
         if ($("pf-social-search")) $("pf-social-search").value = "";
         renderProfile();
       };
     });
-    if ($("pf-social-search")) {
-      $("pf-social-search").oninput = function () { UI.pfSocialQ = this.value; UI.pfSocialLimit = CONFIG.socialPageSize; renderProfileSocialTab(); };
-    }
-    if ($("pf-followers-card")) $("pf-followers-card").onclick = function () { openSocialListSheet("followers"); };
-    if ($("pf-following-card")) $("pf-following-card").onclick = function () { openSocialListSheet("following"); };
-    if ($("pf-friends-card")) $("pf-friends-card").onclick = function () { openSocialListSheet("friends"); };
-    if ($("pf-blocked-card")) $("pf-blocked-card").onclick = function () { openSocialListSheet("blocked"); };
-    if ($("pf-wallet-card")) $("pf-wallet-card").onclick = openWalletSheet;
-    if ($("pf-vip-card")) $("pf-vip-card").onclick = openVipSheet;
+    if ($("pf-social-search")) $("pf-social-search").oninput = function () { UI.pfSocialQ = this.value; renderProfileSocialTab(); };
+    $("pf-vip-btn").onclick = openVipSheet;
+    $("pf-settings-btn").onclick = openProfileSettingsSheet;
+    if ($("pf-wallet-open")) $("pf-wallet-open").onclick = openWalletSheet;
+    if ($("room-wallet-open")) $("room-wallet-open").onclick = openWalletSheet;
     if ($("pf-admin-btn")) $("pf-admin-btn").onclick = openAdminPanelSheet;
-    if ($("pf-settings-btn")) $("pf-settings-btn").onclick = openProfileSettingsSheet;
-
-    $("scrim").onclick = closeSheet;
-    $("room-back").onclick = function () { leaveRoom(false); };
-    $("room-menu-btn").onclick = openRoomMenu;
-    if ($("room-friends-btn")) $("room-friends-btn").onclick = openRoomFriendsInviteSheet;
-    if ($("room-wallet-chip")) $("room-wallet-chip").onclick = openWalletSheet;
-    if ($("room-hand-btn")) {
-      $("room-hand-btn").onclick = function () {
-        var r = getRoom(UI.roomId);
-        if (r) toggleHandRaise(r);
-      };
-    }
-    if ($("audio-unlock-btn")) {
-      $("audio-unlock-btn").onclick = function () { resumeAllRemoteAudioTracks(); showAudioUnlockBar(false); toast("تم تفعيل الصوت بنجاح 🔊"); };
-    }
-    if ($("music-mini-open")) $("music-mini-open").onclick = openMusicSheet;
-    if ($("music-mini-stop")) {
-      $("music-mini-stop").onclick = function () {
-        var r = getRoom(UI.roomId || UI.floatingRoomId);
-        if (!r) return;
-        if (canControlRoomMusic(r)) setRoomMusicRemote(r.id, { url: "", title: "", artist: "", playing: false, positionSec: 0, updatedAt: now() });
-        else { UI.roomSpeakerMuted = !UI.roomSpeakerMuted; applyRoomSpeakerMuteState(); renderRoom(); }
-      };
-    }
-
-    $("room-mic-btn").onclick = async function () {
-      var r = getRoom(UI.roomId); if (!r) return;
-      var si = seatIndexOf(r, S.me.id);
-      if (si < 0) { toast("اصعد على مقعد أولاً لتفعيل المايك 🎤"); return; }
-      if (r.seats[si].muted) { toast("المايك مكتوم من قِبل إدارة الغرفة 🔇"); return; }
-      UI.micMuted = !UI.micMuted;
-      await syncMicHardwareState();
-      renderRoom();
-      toast(UI.micMuted ? "تم كتم المايك 🔇" : "تم فتح المايك 🎤");
+    if ($("pf-blocked-btn")) $("pf-blocked-btn").onclick = function () { openSocialListSheet("blocked"); };
+    $("pf-copy-id").onclick = function () {
+      var idTxt = displayUserId(S.me);
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(idTxt).catch(function () { /* */ });
+      toast("تم نسخ ID: " + idTxt);
     };
+    $("pf-stat-followers-btn").onclick = function () { UI.pftab = "followers"; renderProfile(); };
+    $("pf-stat-following-btn").onclick = function () { UI.pftab = "following"; renderProfile(); };
+    $("pf-stat-friends-btn").onclick = function () { UI.pftab = "friends"; renderProfile(); };
 
-    if ($("room-speaker-btn")) {
-      $("room-speaker-btn").onclick = function () {
-        UI.roomSpeakerMuted = !UI.roomSpeakerMuted;
-        applyRoomSpeakerMuteState();
-        renderRoom();
-        toast(UI.roomSpeakerMuted ? "تم كتم صوت الغرفة 🔇" : "تم تشغيل صوت الغرفة 🔊");
-      };
-    }
-
-    $("room-gift-btn").onclick = function () { openGiftSheet(); };
-    if ($("room-music-btn")) $("room-music-btn").onclick = openMusicSheet;
-
-    $("room-emoji-btn").onclick = function () {
-      openSheet("<h3>اختر إيموجي</h3><div class='egrid'>" + EMOJIS.map(function (e) { return '<div class="eitem">' + e + "</div>"; }).join("") + "</div>");
-      $("sheet").querySelectorAll(".eitem").forEach(function (el) {
-        el.onclick = function () { $("room-input").value += el.textContent; closeSheet(); $("room-input").focus(); };
-      });
+    $("room-back").onclick = minimizeRoomToFloatingOrb;
+    $("floating-orb-label").onclick = function () { if (UI.floatingRoomId) enterRoom(UI.floatingRoomId); };
+    $("floating-orb-avatar").onclick = function () { if (UI.floatingRoomId) enterRoom(UI.floatingRoomId); };
+    $("floating-orb-leave").onclick = function (e) { e.stopPropagation(); leaveRoom(false); };
+    $("room-presence-btn").onclick = openRoomPresenceSheet;
+    $("room-friends-btn").onclick = openRoomFriendsInviteSheet;
+    $("room-speaker-btn").onclick = function () {
+      UI.roomSpeakerMuted = !UI.roomSpeakerMuted;
+      applyRoomSpeakerMuteState();
+      toast(UI.roomSpeakerMuted ? "تم كتم صوت الغرفة والسماعات" : "تم تشغيل صوت الغرفة والسماعات 🔊");
     };
-
-    function sendRoomChat() {
-      var r = getRoom(UI.roomId); if (!r) return;
-      if (!allowActionRateLimit()) return;
-      var inp = $("room-input"), t = inp.value.trim(); if (!t) return;
-      pushRoomMsg(r, { from: S.me.id, name: S.me.name, text: t });
-      inp.value = "";
-    }
-    $("room-send").onclick = sendRoomChat;
-    $("room-input").onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); sendRoomChat(); } };
+    if ($("room-leave-top")) $("room-leave-top").onclick = function () { leaveRoom(true); };
+    $("audio-unlock-btn").onclick = function () { resumeAllRemoteAudioTracks(); };
+    $("room-menu").onclick = openRoomMenu;
+    $("mmini-toggle").onclick = function () {
+      var r = getRoom(UI.roomId || UI.floatingRoomId);
+      if (!r || !r.music || !r.music.url || !canControlRoomMusic(r)) { toast("التحكم بالموسيقى متاح لمالك الغرفة والمشرفين فقط"); return; }
+      var nowPlay = !r.music.playing;
+      setRoomMusicRemote(r.id, { url: r.music.url, title: r.music.title, artist: r.music.artist || "", playing: nowPlay, positionSec: computeMusicPositionSec(r.music), updatedAt: now() });
+    };
+    $("mmini-skip").onclick = function () {
+      var r = getRoom(UI.roomId || UI.floatingRoomId);
+      if (!r || !r.music || !canControlRoomMusic(r)) { toast("التحكم بالموسيقى متاح لمالك الغرفة والمشرفين فقط"); return; }
+      var pl = Array.isArray(r.playlist) && r.playlist.length ? r.playlist : DEFAULT_TRACKS;
+      var idx = pl.findIndex(function (t) { return t.url === r.music.url; });
+      var next = pl[(idx + 1) % pl.length];
+      if (next) setRoomMusicRemote(r.id, { url: next.url, title: next.title, artist: next.artist || "", playing: true, positionSec: 0, updatedAt: now() });
+    };
+    $("mmini-open").onclick = openMusicSheet;
 
     $("room-seats").onclick = function (e) {
-      var s = e.target.closest(".seat");
-      if (s) openSeatMenu(Number(s.getAttribute("data-seat")));
+      var seat = e.target.closest(".seat");
+      if (seat) onSeatClick(Number(seat.getAttribute("data-seat")));
+    };
+    $("mic-btn").onclick = function () {
+      var r = getRoom(UI.roomId); if (!r) return;
+      var idx = seatIndexOf(r, S.me.id);
+      if (idx < 0) {
+        if (r.micApprovalMode && !isRoomModOrOwner(r, S.me.id)) {
+          if (!Array.isArray(r.handRequests)) r.handRequests = [];
+          if (r.handRequests.indexOf(S.me.id) < 0) {
+            r.handRequests.push(S.me.id);
+            if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + S.me.id).set(true).catch(function () { /* */ });
+            renderRoom(); toast("تم إرسال طلب الصعود للمايك ✋");
+          } else toast("طلبك قيد الانتظار لدى إدارة الغرفة");
+          return;
+        }
+        var free = r.seats.findIndex(function (s) { return !s.uid && !s.locked; });
+        if (free < 0) { toast("لا يوجد مقعد فارغ"); return; }
+        UI.micMuted = false;
+        r.listeners = (r.listeners || []).filter(function (x) { return x !== S.me.id; });
+        applySeatMutation(r, free, function (seat) { seat.uid = S.me.id; seat.muted = false; }, "صعدت إلى المقعد #" + (free + 1) + " 🎙️");
+        return;
+      }
+      UI.micMuted = !UI.micMuted;
+      if (!UI.micMuted) r.seats[idx].muted = false;
+      applySeatMutation(r, idx, function (seat) { if (!UI.micMuted) seat.muted = false; }, UI.micMuted ? "تم كتم الميكروفون" : "تم فتح الميكروفون");
+    };
+    if ($("raise-hand-btn")) {
+      $("raise-hand-btn").onclick = function () {
+        var r = getRoom(UI.roomId); if (!r) return;
+        if (!Array.isArray(r.handRequests)) r.handRequests = [];
+        var idx = r.handRequests.indexOf(S.me.id);
+        if (idx >= 0) {
+          r.handRequests.splice(idx, 1);
+          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + S.me.id).remove().catch(function () { /* */ });
+          renderRoom(); toast("تم إلغاء طلب المايك");
+        } else {
+          r.handRequests.push(S.me.id);
+          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/handRequests/" + S.me.id).set(true).catch(function () { /* */ });
+          renderRoom(); toast("تم رفع اليد لطلب المايك ✋");
+        }
+      };
+    }
+
+    function sendRoomText() {
+      var r = getRoom(UI.roomId), inp = $("room-input");
+      if (!r || !inp) return;
+      var txt = inp.value.trim();
+      if (!txt) return;
+      if (!allowActionRateLimit()) return;
+      inp.value = "";
+      pushRoomMsg(r, { from: S.me.id, fromName: S.me.name || "مستخدم", text: clean(txt) });
+    }
+    $("room-send").onclick = sendRoomText;
+    $("room-input").onkeydown = function (e) { if (e.key === "Enter") sendRoomText(); };
+    $("room-emoji").onclick = function () { openEmojiSheet(function (em) { $("room-input").value += em; $("room-input").focus(); }); };
+    $("room-sticker").onclick = function () {
+      openStickerSheet(function (st) {
+        var r = getRoom(UI.roomId); if (!r) return;
+        pushRoomMsg(r, { from: S.me.id, fromName: S.me.name || "مستخدم", text: st });
+      });
+    };
+    $("room-music").onclick = openMusicSheet;
+    $("room-gift").onclick = function () { openGiftSheet(); };
+
+    if ($("room-photo-btn")) {
+      $("room-photo-btn").onclick = function () {
+        var r = getRoom(UI.roomId);
+        if (!r || !isRoomModOrOwner(r, S.me.id)) { toast("تغيير صورة الغرفة متاح لمالك الغرفة والمشرفين فقط"); return; }
+        $("room-photo-input").click();
+      };
+    }
+    if ($("room-photo-input")) {
+      $("room-photo-input").onchange = async function () {
+        var f = this.files && this.files[0]; this.value = "";
+        if (!f) return;
+        var r = getRoom(UI.roomId);
+        if (!r || !isRoomModOrOwner(r, S.me.id)) { toast("تغيير صورة الغرفة متاح لمالك الغرفة والمشرفين فقط"); return; }
+        try {
+          var photoData = await readImageFileAsDataUrl(f, 360, 0.58);
+          r.roomPhoto = photoData;
+          if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("rooms/" + r.id + "/roomPhoto").set(photoData).catch(function () { /* */ });
+          saveLocal(); renderRoom(); renderFloatingOrb(); renderHome(); renderRooms();
+          toast("تم تحديث صورة الغرفة ✅");
+        } catch (e) { toast(e.message); }
+      };
+    }
+    if ($("room-chat-img")) {
+      $("room-chat-img").onchange = async function () {
+        var f = this.files && this.files[0]; this.value = "";
+        var r = getRoom(UI.roomId);
+        if (!f || !r) return;
+        try {
+          var imgData = await readImageFileAsDataUrl(f, 280, 0.52);
+          pushRoomMsg(r, { from: S.me.id, fromName: S.me.name || "مستخدم", img: imgData });
+        } catch (e) { toast(e.message); }
+      };
+    }
+
+    $("chat-back").onclick = closeDM;
+    function sendDmText() {
+      var inp = $("chat-input");
+      if (!inp) return;
+      var txt = inp.value.trim();
+      if (!txt) return;
+      inp.value = "";
+      sendDM(txt);
+    }
+    $("chat-send").onclick = sendDmText;
+    $("chat-input").onkeydown = function (e) { if (e.key === "Enter") sendDmText(); };
+    $("chat-emoji").onclick = function () { openEmojiSheet(function (em) { $("chat-input").value += em; $("chat-input").focus(); }); };
+    $("chat-voice").onclick = toggleDmVoiceNote;
+    $("chat-photo").onclick = function () { $("chat-img-input").click(); };
+    $("chat-img-input").onchange = async function () {
+      var f = this.files && this.files[0]; this.value = "";
+      if (!f || !UI.dmId) return;
+      try { var imgData = await readImageFileAsDataUrl(f, 280, 0.52); sendDM({ img: imgData }); }
+      catch (e) { toast(e.message); }
     };
 
-    $("dm-back").onclick = closeDM;
-    $("dm-send").onclick = function () { sendDM(); };
-    $("dm-input").onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); sendDM(); } };
-    if ($("dm-profile-btn")) $("dm-profile-btn").onclick = function () { if (UI.dmId) openUserProfileSheet(UI.dmId); };
-    if ($("dm-block-btn")) {
-      $("dm-block-btn").onclick = function () {
-        if (!UI.dmId) return;
-        confirmBlockUserSheet(UI.dmId, function () { closeDM(); renderMessages(); });
-      };
-    }
-    if ($("dm-sticker-btn")) {
-      $("dm-sticker-btn").onclick = function () {
-        openSheet("<h3>إرسال ملصق</h3><div class='egrid'>" + STICKERS.map(function (st) { return '<div class="eitem" data-sticker="' + esc(st.e) + '" title="' + esc(st.n) + '">' + esc(st.e) + "</div>"; }).join("") + "</div>");
-        $("sheet").querySelectorAll("[data-sticker]").forEach(function (el) {
-          el.onclick = function () { var em = el.getAttribute("data-sticker"); closeSheet(); sendDM({ text: em }); };
-        });
-      };
-    }
-    if ($("dm-img-btn") && $("dm-img-file")) {
-      $("dm-img-btn").onclick = function () { $("dm-img-file").click(); };
-      $("dm-img-file").onchange = async function () {
-        var f = this.files && this.files[0]; this.value = ""; if (!f) return;
-        try { var dataUrl = await readImageFileAsDataUrl(f, 480, 0.65); sendDM({ img: dataUrl, text: "" }); }
-        catch (e) { toast(e.message); }
-      };
-    }
-    if ($("dm-mic-btn")) {
-      $("dm-mic-btn").onclick = async function () {
-        if (!UI.dmId || isBlockedEitherWay(UI.dmId) || !isFriendWith(UI.dmId)) { toast("الرسائل الصوتية متاحة للأصدقاء فقط"); return; }
-        if (isRecordingDm && dmRecorder) { try { dmRecorder.stop(); } catch (e) { /* */ } return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !global.MediaRecorder) { toast("المتصفح لا يدعم تسجيل الرسائل الصوتية"); return; }
-        try {
-          var stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          dmChunks = [];
-          dmRecorder = new MediaRecorder(stream);
-          isRecordingDm = true;
-          this.classList.add("recording");
-          toast("جاري التسجيل... اضغط زر المايك مجدداً للإرسال 🎙️");
-          var selfBtn = this;
-          dmRecorder.ondataavailable = function (ev) { if (ev.data && ev.data.size > 0) dmChunks.push(ev.data); };
-          dmRecorder.onstop = function () {
-            stream.getTracks().forEach(function (tr) { tr.stop(); });
-            isRecordingDm = false; selfBtn.classList.remove("recording");
-            var blob = new Blob(dmChunks, { type: "audio/webm" }); dmChunks = [];
-            if (blob.size < 200) return;
-            var reader = new FileReader();
-            reader.onloadend = function () { sendDM({ audio: String(reader.result || ""), text: "" }); };
-            reader.readAsDataURL(blob);
-          };
-          dmRecorder.start();
-        } catch (e) { toast("تعذر الوصول إلى الميكروفون"); }
-      };
-    }
-
     document.addEventListener("click", function (e) {
-      var t = e.target;
-      var joinInv = t.closest("[data-join-invite]");
-      if (joinInv) { var invRoomId = joinInv.getAttribute("data-join-invite"); closeDM(); enterRoom(invRoomId); return; }
-      var delTh = t.closest("[data-del-thread]");
-      if (delTh) { e.stopPropagation(); deleteDmThread(delTh.getAttribute("data-del-thread")); return; }
-      var invBtn = t.closest("[data-invite-friend]");
-      if (invBtn) { e.stopPropagation(); inviteFriendToRoom(invBtn.getAttribute("data-invite-friend")); return; }
-      var folBtn = t.closest("[data-follow-user]");
-      if (folBtn) { e.stopPropagation(); followUser(folBtn.getAttribute("data-follow-user")); return; }
-      var unblkBtn = t.closest("[data-unblock-user]");
-      if (unblkBtn) { e.stopPropagation(); confirmUnblockUserSheet(unblkBtn.getAttribute("data-unblock-user")); return; }
-      var remFrBtn = t.closest("[data-remove-friend]");
-      if (remFrBtn) { e.stopPropagation(); removeFriend(remFrBtn.getAttribute("data-remove-friend")); return; }
-      var prof = t.closest("[data-profile]");
-      if (prof) { e.stopPropagation(); openUserProfileSheet(prof.getAttribute("data-profile")); return; }
-      var ent = t.closest("[data-enter]");
-      if (ent) { e.stopPropagation(); enterRoom(ent.getAttribute("data-enter")); return; }
-      var add = t.closest("[data-addfriend]");
-      if (add) { e.stopPropagation(); sendFriendRequest(add.getAttribute("data-addfriend")); return; }
-      var canReq = t.closest("[data-cancelfreq]");
-      if (canReq) { e.stopPropagation(); cancelFriendRequest(canReq.getAttribute("data-cancelfreq")); return; }
-      var rej = t.closest("[data-reject]");
-      if (rej) { e.stopPropagation(); rejectFriendRequest(rej.getAttribute("data-reject")); return; }
-      var acc = t.closest("[data-accept]");
-      if (acc) { e.stopPropagation(); acceptFriendRequest(acc.getAttribute("data-accept")); return; }
-      var dm = t.closest("[data-dm]");
-      if (dm && !t.closest("button")) { e.stopPropagation(); openDM(dm.getAttribute("data-dm")); }
+      var el = e.target.closest("[data-enter], [data-profile], [data-dm], [data-addfriend], [data-cancelfreq], [data-accept], [data-reject], [data-remove-friend], [data-follow-user], [data-block-user], [data-unblock-user], [data-gift-to], [data-invite-friend], [data-del-thread], [data-adm-ban], [data-close-rep]");
+      if (!el) return;
+      if (el.hasAttribute("data-enter")) enterRoom(el.getAttribute("data-enter"));
+      else if (el.hasAttribute("data-profile")) openUserProfileSheet(el.getAttribute("data-profile"));
+      else if (el.hasAttribute("data-dm")) openDM(el.getAttribute("data-dm"));
+      else if (el.hasAttribute("data-addfriend")) sendFriendRequest(el.getAttribute("data-addfriend"));
+      else if (el.hasAttribute("data-cancelfreq")) cancelFriendRequest(el.getAttribute("data-cancelfreq"));
+      else if (el.hasAttribute("data-accept")) acceptFriendRequest(el.getAttribute("data-accept"));
+      else if (el.hasAttribute("data-reject")) rejectFriendRequest(el.getAttribute("data-reject"));
+      else if (el.hasAttribute("data-remove-friend")) removeFriend(el.getAttribute("data-remove-friend"));
+      else if (el.hasAttribute("data-follow-user")) toggleFollowUser(el.getAttribute("data-follow-user"));
+      else if (el.hasAttribute("data-block-user")) confirmBlockUserSheet(el.getAttribute("data-block-user"));
+      else if (el.hasAttribute("data-unblock-user")) confirmUnblockUserSheet(el.getAttribute("data-unblock-user"), function () { if (UI.page === "profile") renderProfile(); });
+      else if (el.hasAttribute("data-gift-to")) openGiftSheet(el.getAttribute("data-gift-to"));
+      else if (el.hasAttribute("data-invite-friend")) inviteFriendToRoom(el.getAttribute("data-invite-friend"));
+      else if (el.hasAttribute("data-del-thread")) { e.stopPropagation(); deleteDmThread(el.getAttribute("data-del-thread")); }
+      else if (el.hasAttribute("data-adm-ban")) {
+        var uidBan = el.getAttribute("data-adm-ban"), targetU = resolveLiveUser(uidBan), nextBan = !targetU.banned;
+        if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("users/" + uidBan + "/banned").set(nextBan).catch(function () { /* */ });
+        if (cloud.usersMap[uidBan]) cloud.usersMap[uidBan].banned = nextBan;
+        toast(nextBan ? "تم حظر المستخدم" : "تم فك الحظر");
+        openAdminPanelSheet();
+      } else if (el.hasAttribute("data-close-rep")) {
+        var repId = el.getAttribute("data-close-rep");
+        S.reports = (S.reports || []).map(function (rp) { return rp.id === repId ? Object.assign({}, rp, { status: "closed" }) : rp; });
+        if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("reports/" + repId + "/status").set("closed").catch(function () { /* */ });
+        saveLocal(); toast("تم إغلاق البلاغ"); openAdminPanelSheet();
+      }
     });
+
+    $("scrim").onclick = closeSheet;
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
   }
 
-  async function init() {
-    initPwaInstall();
-    bindEvents();
-    resetInMemoryStateForSession("guest_session", false);
-    renderAll();
-    initCloud();
-
-    var safetyHideTimer = setTimeout(function () { hideSplash(); }, 1200);
-
-    if (cloud.on && cloud.auth) {
-      cloud.auth.getRedirectResult().then(async function (res) {
-        if (res && res.user) {
-          clearTimeout(safetyHideTimer);
-          await handleAuthenticatedUser(res.user);
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      var swCode = [
+        "const CACHE_NAME = 'real-voice-cache-v22';",
+        "self.addEventListener('install', event => {",
+        "  event.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./']).catch(() => {})).then(() => self.skipWaiting()));",
+        "});",
+        "self.addEventListener('activate', event => {",
+        "  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim()));",
+        "});",
+        "self.addEventListener('message', event => {",
+        "  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();",
+        "});",
+        "self.addEventListener('fetch', event => {",
+        "  if (event.request.method !== 'GET') return;",
+        "  const url = new URL(event.request.url);",
+        "  if (url.origin !== self.location.origin) return;",
+        "  if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {",
+        "    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));",
+        "    return;",
+        "  }",
+        "  event.respondWith(",
+        "    caches.match(event.request).then(cached => {",
+        "      const networkFetch = fetch(event.request).then(res => {",
+        "        if (res && res.status === 200 && res.type === 'basic') {",
+        "          const clone = res.clone();",
+        "          caches.open(CACHE_NAME).then(c => c.put(event.request, clone)).catch(() => {});",
+        "        }",
+        "        return res;",
+        "      }).catch(() => cached);",
+        "      return cached || networkFetch;",
+        "    })",
+        "  );",
+        "});"
+      ].join("\n");
+      var blob = new Blob([swCode], { type: "application/javascript" });
+      var swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl, { scope: "./" }).then(function (reg) {
+        if (reg.waiting) {
+          waitingServiceWorker = reg.waiting;
+          var uBar = $("update-app-bar");
+          if (uBar) uBar.classList.remove("hidden");
         }
+        reg.addEventListener("updatefound", function () {
+          var newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", function () {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              waitingServiceWorker = newWorker;
+              var uBar = $("update-app-bar");
+              if (uBar) uBar.classList.remove("hidden");
+            }
+          });
+        });
       }).catch(function () { /* */ });
-
-      var handledInitialAuth = false;
-      cloud.auth.onAuthStateChanged(async function (authUser) {
-        if (handledInitialAuth && !authUser) return;
-        if (authUser && !authUser.isAnonymous) {
-          handledInitialAuth = true;
-          clearTimeout(safetyHideTimer);
-          await handleAuthenticatedUser(authUser);
-          return;
-        }
-        if (authUser && authUser.isAnonymous) {
-          handledInitialAuth = true;
-          await handleAuthenticatedUser(authUser);
-          return;
-        }
-        if (!handledInitialAuth) {
-          handledInitialAuth = true;
-          try {
-            await cloud.auth.signInAnonymously();
-          } catch (authErr) {
-            clearTimeout(safetyHideTimer);
-            hideSplash();
-            showAuthGate(true, "login");
-            setAuthError("فعّل تسجيل الدخول المجهول (Anonymous) أو Google من Firebase Authentication ثم اضغط تسجيل الدخول.");
-          }
-        }
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
       });
+    } catch (e) { /* */ }
+  }
+
+  function init() {
+    resetInMemoryStateForSession("guest_session", false);
+    bindEvents();
+    initPwaInstall();
+    registerServiceWorker();
+    renderAll();
+
+    var cloudOk = initCloud();
+    var safetyHideTimer = setTimeout(function () {
+      hideSplash();
+      if (!UI.authReady) showAuthGate(true, isGuestSession() ? "onboard" : "login");
+    }, 3500);
+
+    if (!cloudOk || !cloud.auth) {
+      clearTimeout(safetyHideTimer);
+      hideSplash();
+      setAuthError("تعذر تهيئة Firebase (" + (cloud.lastInitError || "تحقق من اتصال الإنترنت") + "). يمكنك الدخول كزائر.");
+      if (isGuestSession()) signInAsGuest();
+      else showAuthGate(true, "login");
       return;
     }
 
-    clearTimeout(safetyHideTimer);
-    hideSplash();
-    UI.authReady = false;
-    showAuthGate(true, "login");
-    setAuthError("تعذر تحميل Firebase. يمكنك المحاولة كزائر مؤقت.");
+    cloud.auth.getRedirectResult().then(async function (res) {
+      if (res && res.user) {
+        clearTimeout(safetyHideTimer);
+        await handleAuthenticatedUser(res.user);
+      }
+    }).catch(function (err) {
+      if (err && err.code) {
+        setAuthError("خطأ أثناء العودة من Google (" + err.code + "): " + (err.message || ""));
+      }
+    });
+
+    cloud.auth.onAuthStateChanged(async function (user) {
+      clearTimeout(safetyHideTimer);
+      if (user) {
+        await handleAuthenticatedUser(user);
+      } else {
+        UI.googleUser = null;
+        if (isGuestSession()) {
+          await signInAsGuest();
+        } else {
+          UI.authReady = false;
+          resetInMemoryStateForSession("guest_session", false);
+          renderAll();
+          hideSplash();
+          showAuthGate(true, "login");
+        }
+      }
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
