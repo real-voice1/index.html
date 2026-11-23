@@ -2,370 +2,342 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REAL VOICE — لوحة التحكم الإدارية</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>REAL VOICE — لوحة التحكم الإدارية الكاملة</title>
   <style>
     :root {
-      --bg: #080a12;
-      --card: #121626;
-      --card-2: #181e34;
-      --line: rgba(245, 158, 11, 0.22);
-      --text: #f8fafc;
+      --bg: #070910;
+      --panel: #111626;
+      --panel-2: #182036;
+      --ink: #f8fafc;
       --muted: #94a3b8;
+      --line: rgba(148, 163, 184, 0.16);
+      --brand: #7c3aed;
+      --brand-2: #db2777;
+      --cyan: #06b6d4;
       --gold: #f59e0b;
-      --gold-2: #fbbf24;
-      --purple: #7c3aed;
-      --ok: #16a34a;
-      --red: #dc2626;
+      --ok: #22c55e;
+      --bad: #ef4444;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at top, #1e1538, var(--bg) 65%);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
-      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
     }
     .hidden { display: none !important; }
     .topbar {
-      position: sticky; top: 0; z-index: 30;
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      padding: 12px 18px; background: rgba(12, 15, 28, 0.94);
-      backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 18px;
+      background: rgba(17, 22, 38, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
     }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 17px; color: var(--gold-2); }
-    .layout { display: grid; grid-template-columns: 245px minmax(0, 1fr); min-height: calc(100vh - 58px); }
-    .sidebar {
-      background: var(--card); border-left: 1px solid var(--line); padding: 12px;
-      display: flex; flex-direction: column; gap: 6px;
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 18px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
-    .nav-item {
-      width: 100%; text-align: right; padding: 10px 12px; border-radius: 12px;
-      border: 1px solid transparent; background: transparent; color: var(--text);
-      cursor: pointer; font-weight: 700; font-size: 13px;
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+    .stat b { display: block; font-size: 22px; color: var(--cyan); }
+    .stat span { font-size: 12px; color: var(--muted); }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      padding: 9px 14px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
     }
-    .nav-item:hover { background: var(--card-2); }
-    .nav-item.active {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(124, 58, 237, 0.25));
-      border-color: rgba(245, 158, 11, 0.55); color: var(--gold-2);
-    }
-    .content { padding: 18px; max-width: 1200px; width: 100%; margin: 0 auto; }
-    .section { display: none; }
-    .section.active { display: block; }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .kpi {
-      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px;
-    }
-    .kpi b { display: block; font-size: 22px; color: var(--gold-2); }
-    .kpi span { font-size: 12px; color: var(--muted); }
-    .panel {
-      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-      padding: 16px; margin-bottom: 16px;
-    }
-    .panel h3 { margin: 0 0 12px; font-size: 16px; color: var(--gold-2); }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-    label { display: block; font-size: 12.5px; color: var(--muted); margin: 8px 0 4px; font-weight: 600; }
-    input, select, textarea {
-      width: 100%; padding: 9px 12px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.14);
-      background: var(--card-2); color: var(--text); font-size: 13.5px; outline: none; font-family: inherit;
-    }
+    .tab.active { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; border-color: transparent; }
     .btn {
-      border: 0; border-radius: 11px; padding: 9px 14px; font-weight: 700; font-size: 13px;
-      cursor: pointer; background: linear-gradient(135deg, #d97706, var(--gold)); color: #090b12;
+      border: none;
+      border-radius: 11px;
+      padding: 9px 14px;
+      font-weight: 800;
+      font-size: 12.5px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      cursor: pointer;
     }
-    .btn.sm { padding: 6px 10px; font-size: 12px; }
-    .btn.ghost { background: var(--card-2); color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
-    .btn.ok { background: var(--ok); color: #fff; }
-    .btn.red { background: var(--red); color: #fff; }
-    .btn.purple { background: var(--purple); color: #fff; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: right; }
-    th { color: var(--gold-2); font-size: 12px; }
-    .table-wrap { overflow-x: auto; }
-    .pill {
-      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
-      background: rgba(245, 158, 11, 0.16); color: var(--gold-2);
+    .btn.sm { padding: 6px 10px; font-size: 11.5px; }
+    .btn.ok { background: linear-gradient(135deg, #16a34a, #22c55e); }
+    .btn.red { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .btn.gold { background: linear-gradient(135deg, #d97706, #f59e0b); color: #0b0d14; }
+    .btn.ghost { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-top: 10px; font-weight: 700; }
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 11px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--ink);
+      margin-top: 4px;
+      font-size: 13px;
     }
-    .pill.ok { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
-    .pill.bad { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
     .switch-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-      padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      margin-top: 8px;
     }
-    .switch-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
-    .gate-box { max-width: 420px; margin: 70px auto; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; }
-    #adm-toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      background: #111827; color: #fff; border: 1px solid var(--gold);
-      padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; z-index: 999;
+    .switch-row input[type="checkbox"] { width: auto; margin: 0; transform: scale(1.2); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: middle; }
+    th { color: var(--muted); font-size: 12px; }
+    .table-wrap { overflow-x: auto; }
+    .tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: rgba(148, 163, 184, 0.16); display: inline-block; }
+    .tag.ok { background: rgba(34, 197, 94, 0.18); color: #4ade80; }
+    .tag.bad { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+    .tag.gold { background: rgba(245, 158, 11, 0.2); color: var(--gold); }
+
+    .reward-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      margin-top: 8px;
     }
-    @media (max-width: 820px) {
-      .layout { grid-template-columns: 1fr; }
-      .sidebar { flex-direction: row; overflow-x: auto; border-left: 0; border-bottom: 1px solid var(--line); }
-      .nav-item { white-space: nowrap; }
+
+    #gate-box { max-width: 440px; margin: 70px auto; text-align: center; }
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99;
+      background: var(--panel-2);
+      color: #fff;
+      border: 1px solid var(--cyan);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
     }
+    #toast.show { opacity: 1; }
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">👑 REAL VOICE — لوحة الإدارة المركزية</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span id="adm-user-badge" class="pill">غير مسجل</span>
-      <button class="btn sm ghost" id="adm-logout-btn" type="button">خروج</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <strong style="font-size:16px">🛡️ لوحة تحكم REAL VOICE</strong>
+      <span id="admin-who" class="tag gold">غير مسجل</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a class="btn sm ghost" href="./index.html" style="text-decoration:none">↩ العودة للتطبيق</a>
+      <button class="btn sm red hidden" id="adm-signout-btn" type="button">خروج</button>
     </div>
   </header>
 
-  <div id="adm-gate" class="gate-box">
-    <h2 style="margin-top:0;color:var(--gold-2)">تسجيل الدخول الإداري</h2>
-    <p style="color:var(--muted);font-size:13px">سجّل الدخول بحساب مدير معتمد في مشروع Firebase (<code>real-voice-aec71</code>) للوصول إلى لوحة التحكم.</p>
-    <button class="btn" style="width:100%" id="adm-google-btn" type="button">الدخول بحساب Google الإداري</button>
-    <div id="adm-gate-msg" style="margin-top:12px;color:#fca5a5;font-size:12.5px"></div>
+  <div id="gate-box" class="card">
+    <h2 style="margin-top:0">تسجيل دخول الإدارة</h2>
+    <p id="gate-msg" style="color:var(--muted);font-size:13px">سجّل بحساب Google المعتمد كمدير أو مشرف للوصول إلى لوحة التحكم.</p>
+    <button class="btn" id="adm-google-btn" type="button" style="width:100%">تسجيل الدخول بحساب Google</button>
   </div>
 
-  <div id="adm-shell" class="layout hidden">
-    <aside class="sidebar">
-      <button class="nav-item active" data-sec="dashboard" type="button">📊 الرئيسية والإحصائيات</button>
-      <button class="nav-item" data-sec="users" type="button">👥 إدارة المستخدمين</button>
-      <button class="nav-item" data-sec="wallet" type="button">🪙 إدارة العملات</button>
-      <button class="nav-item" data-sec="gifts" type="button">🎁 الهدايا الثابتة والتصنيفات</button>
-      <button class="nav-item" data-sec="lucky" type="button">🎰 هدايا الحظ والاحتمالات</button>
-      <button class="nav-item" data-sec="rooms" type="button">🎙️ إدارة الغرف الصوتية</button>
-      <button class="nav-item" data-sec="vip" type="button">👑 VIP والمستويات</button>
-      <button class="nav-item" data-sec="notifications" type="button">🔔 مركز الإشعارات</button>
-      <button class="nav-item" data-sec="settings" type="button">⚙️ إعدادات التطبيق والصيانة</button>
-      <button class="nav-item" data-sec="admins" type="button">🛡️ المشرفون والصلاحيات</button>
-      <button class="nav-item" data-sec="logs" type="button">📜 سجل العمليات</button>
-    </aside>
+  <main id="admin-main" class="wrap hidden">
+    <div class="grid-4">
+      <div class="stat"><b id="st-users">0</b><span>إجمالي الأعضاء</span></div>
+      <div class="stat"><b id="st-rooms">0</b><span>الغرف النشطة</span></div>
+      <div class="stat"><b id="st-gifts-tx">0</b><span>الهدايا المرسلة</span></div>
+      <div class="stat"><b id="st-reports">0</b><span>البلاغات المفتوحة</span></div>
+    </div>
 
-    <main class="content">
-      <section id="sec-dashboard" class="section active">
-        <div class="kpis">
-          <div class="kpi"><b id="kpi-users">0</b><span>إجمالي المستخدمين</span></div>
-          <div class="kpi"><b id="kpi-rooms">0</b><span>الغرف الصوتية</span></div>
-          <div class="kpi"><b id="kpi-gifts">0</b><span>الهدايا الثابتة</span></div>
-          <div class="kpi"><b id="kpi-boxes">0</b><span>صناديق الحظ</span></div>
-          <div class="kpi"><b id="kpi-draws">0</b><span>سحوبات الحظ</span></div>
-        </div>
-        <div class="panel">
-          <h3>آخر سحوبات صناديق الحظ</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الفائز</th><th>الصندوق</th><th>الجائزة</th><th>الندرة</th><th>الوقت</th></tr></thead>
-              <tbody id="dash-draws-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+    <div class="tabs" id="adm-tabs">
+      <button class="tab active" data-tab="users" type="button">👥 الأعضاء والمحافظ</button>
+      <button class="tab" data-tab="rooms" type="button">🎙️ الغرف الصوتية</button>
+      <button class="tab" data-tab="gifts" type="button">🎁 الهدايا الثابتة</button>
+      <button class="tab" data-tab="lucky" type="button">🎰 صناديق الحظ</button>
+      <button class="tab" data-tab="reports" type="button">🚨 البلاغات</button>
+      <button class="tab" data-tab="settings" type="button">⚙️ إعدادات التطبيق</button>
+    </div>
 
-      <section id="sec-users" class="section">
-        <div class="panel">
-          <h3>إدارة المستخدمين</h3>
-          <input id="usr-search" placeholder="ابحث بالاسم أو ID أو المعرف..." style="margin-bottom:12px" />
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>المستخدم</th><th>ID</th><th>VIP</th><th>المستوى</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-              <tbody id="users-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+    <!-- الأعضاء -->
+    <section id="tab-users" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <h3 style="margin:0">إدارة الأعضاء والعملات و VIP</h3>
+        <input id="adm-user-search" type="search" placeholder="ابحث بالاسم أو ID..." style="max-width:260px;margin:0" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>العضو</th>
+              <th>ID</th>
+              <th>الرصيد 🪙</th>
+              <th>VIP</th>
+              <th>الصلاحية</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="adm-users-tbody"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <section id="sec-wallet" class="section">
-        <div class="panel">
-          <h3>إدارة الرصيد والعملات</h3>
-          <div class="grid-2">
-            <div>
-              <label>معرف المستخدم (UID)</label>
-              <input id="wal-uid" placeholder="مثال: uid_123..." />
-            </div>
-            <div>
-              <label>العملية</label>
-              <select id="wal-op">
-                <option value="add">إضافة عملات (+)</option>
-                <option value="deduct">خصم عملات (-)</option>
-                <option value="set">تعيين رصيد محدد (=)</option>
-              </select>
-            </div>
-            <div>
-              <label>عدد العملات</label>
-              <input id="wal-amount" type="number" min="0" value="100" />
-            </div>
-            <div>
-              <label>سبب العملية</label>
-              <input id="wal-reason" placeholder="مثال: مكافأة فعالية أو شحن إداري" />
-            </div>
-          </div>
-          <button class="btn" style="margin-top:12px" id="wal-apply-btn" type="button">تنفيذ عملية العملات</button>
-        </div>
-        <div class="panel">
-          <h3>سجل العمليات المالية والهدايا</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الرقم</th><th>النوع</th><th>التفاصيل</th><th>المدير / المرسل</th><th>التاريخ</th></tr></thead>
-              <tbody id="wallet-logs-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+    <!-- الغرف -->
+    <section id="tab-rooms" class="card hidden">
+      <h3 style="margin-top:0">إدارة الغرف الصوتية</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الغرفة</th>
+              <th>المالك</th>
+              <th>المقاعد</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="adm-rooms-tbody"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <section id="sec-gifts" class="section">
-        <div class="panel">
-          <h3>إضافة / تعديل هدية ثابتة</h3>
-          <div class="grid-2">
-            <div><label>معرف الهدية (ID)</label><input id="g-id" placeholder="مثال: rose أو golden_mic" /></div>
-            <div><label>اسم الهدية</label><input id="g-name" placeholder="مثال: وردة حمراء" /></div>
-            <div><label>إيموجي الهدية</label><input id="g-emoji" placeholder="🌹" /></div>
-            <div><label>رابط صورة متحركة / GIF (اختياري)</label><input id="g-gif" placeholder="https://.../gift.gif" /></div>
-            <div><label>السعر بالعملات (0 للمجانية)</label><input id="g-price" type="number" min="0" value="25" /></div>
-            <div>
-              <label>التصنيف</label>
-              <select id="g-cat">
-                <option value="popular">شائعة</option>
-                <option value="free">مجانية</option>
-                <option value="vip">VIP</option>
-                <option value="events">مناسبات</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px">
-            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-free" /> هدية مجانية</label>
-            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-event" /> هدية مناسبات</label>
-            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-active" checked /> مفعّلة</label>
-          </div>
-          <button class="btn" style="margin-top:12px" id="g-save-btn" type="button">حفظ الهدية</button>
+    <!-- الهدايا الثابتة -->
+    <section id="tab-gifts" class="card hidden">
+      <h3 style="margin-top:0">إضافة / تعديل هدية ثابتة</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <div><label>المعرّف (ID)</label><input id="gf-id" placeholder="مثال: heart أو golden_rose" /></div>
+        <div><label>الاسم</label><input id="gf-name" placeholder="مثال: وردة ذهبية" /></div>
+        <div><label>الإيموجي</label><input id="gf-emoji" placeholder="🌹" /></div>
+        <div><label>رابط صورة/GIF (اختياري)</label><input id="gf-url" placeholder="https://..." /></div>
+        <div><label>السعر (عملات)</label><input id="gf-price" type="number" min="0" value="50" /></div>
+        <div>
+          <label>التصنيف</label>
+          <select id="gf-cat">
+            <option value="popular">شائعة</option>
+            <option value="free">مجانية</option>
+            <option value="vip">VIP</option>
+            <option value="events">مناسبات</option>
+          </select>
         </div>
+        <div><label>الحد الأدنى لـ VIP</label><input id="gf-vip" type="number" min="0" max="3" value="0" /></div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-free" /> هدية مجانية</label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-event" /> هدية مناسبات</label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-active" checked /> مفعلة</label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" id="gf-save-btn" type="button">حفظ الهدية ✅</button>
+        <button class="btn ghost" id="gf-reset-btn" type="button">تفريغ النموذج</button>
+      </div>
 
-        <div class="panel">
-          <h3>قائمة الهدايا الثابتة</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الهدية</th><th>الاسم</th><th>السعر</th><th>التصنيف</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-              <tbody id="gifts-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <h4 style="margin:20px 0 8px">قائمة الهدايا الحالية</h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>الهدية</th><th>الاسم</th><th>السعر</th><th>التصنيف</th><th>الحالة</th><th>إجراءات</th></tr>
+          </thead>
+          <tbody id="adm-gifts-tbody"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <section id="sec-lucky" class="section">
-        <div class="panel">
-          <h3>إدارة صناديق الحظ والاحتمالات (يجب أن يكون مجموع الاحتمالات 100%)</h3>
-          <div class="grid-2">
-            <div><label>معرف الصندوق</label><input id="lb-id" value="box_normal" /></div>
-            <div><label>اسم الصندوق</label><input id="lb-name" value="صندوق الحظ العادي" /></div>
-            <div><label>سعر الفتح بالعملات</label><input id="lb-price" type="number" min="0" value="50" /></div>
-            <div><label>حالة الصندوق</label><select id="lb-active"><option value="1">مفعل</option><option value="0">متوقف</option></select></div>
-          </div>
-          <label>الجوائز بصيغة JSON (الاسم، النوع، القيمة، الندرة، نسبة الاحتمال probability)</label>
-          <textarea id="lb-rewards-json" rows="7">[
-  {"id":"r1","title":"25 عملة","rewardType":"coins","value":25,"emoji":"🪙","rarity":"common","probability":50},
-  {"id":"r2","title":"100 عملة","rewardType":"coins","value":100,"emoji":"💰","rarity":"rare","probability":30},
-  {"id":"r3","title":"شارة النجم","rewardType":"badge","value":"badge_star","emoji":"🌟","rarity":"epic","probability":20}
-]</textarea>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn" id="lb-save-btn" type="button">حفظ الصندوق ونسب الاحتمالات</button>
-            <button class="btn ghost" id="lb-load-btn" type="button">تحميل بيانات الصندوق</button>
-          </div>
-        </div>
+    <!-- صناديق الحظ -->
+    <section id="tab-lucky" class="card hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <h3 style="margin:0">إدارة صناديق الحظ (Lucky Boxes)</h3>
+        <select id="lb-select" style="max-width:260px;margin:0"></select>
+      </div>
 
-        <div class="panel">
-          <h3>الصناديق الحالية</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الصندوق</th><th>السعر</th><th>عدد الجوائز</th><th>مجموع النسب</th><th>الحالة</th></tr></thead>
-              <tbody id="lucky-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:10px">
+        <div><label>معرّف الصندوق</label><input id="lb-id" /></div>
+        <div><label>اسم الصندوق</label><input id="lb-name" /></div>
+        <div><label>أيقونة الصندوق</label><input id="lb-icon" /></div>
+        <div><label>سعر الفتح (🪙)</label><input id="lb-price" type="number" min="0" /></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:10px"><input type="checkbox" id="lb-active" checked /> الصندوق مفعل</label>
 
-      <section id="sec-rooms" class="section">
-        <div class="panel">
-          <h3>إدارة الغرف الصوتية</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الغرفة</th><th>التصنيف</th><th>المالك</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-              <tbody id="rooms-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+        <strong>الجوائز ونسب الاحتمالات (المجموع يجب أن يساوي 100%)</strong>
+        <span id="lb-prob-total" class="tag gold">المجموع: 0%</span>
+      </div>
+      <div id="lb-rewards-list"></div>
 
-      <section id="sec-vip" class="section">
-        <div class="panel">
-          <h3>منح أو إلغاء عضوية VIP لمستخدم</h3>
-          <div class="grid-2">
-            <div><label>معرف المستخدم (UID)</label><input id="vip-uid" placeholder="UID" /></div>
-            <div><label>مستوى VIP (0 لإلغاء، 1 إلى 3)</label><input id="vip-level" type="number" min="0" max="5" value="1" /></div>
-            <div><label>مدة الاشتراك بالأيام</label><input id="vip-days" type="number" min="1" max="365" value="30" /></div>
-          </div>
-          <button class="btn" style="margin-top:12px" id="vip-apply-btn" type="button">تطبيق عضوية VIP</button>
-        </div>
-      </section>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn ghost" id="lb-add-reward-btn" type="button">+ إضافة جائزة</button>
+        <button class="btn ok" id="lb-save-btn" type="button">حفظ الصندوق ✅</button>
+        <button class="btn red" id="lb-delete-btn" type="button">حذف الصندوق</button>
+      </div>
+    </section>
 
-      <section id="sec-notifications" class="section">
-        <div class="panel">
-          <h3>إرسال إشعار عام</h3>
-          <label>العنوان</label><input id="nt-title" placeholder="إعلان هام" />
-          <label>نص الإشعار</label><textarea id="nt-body" rows="3" placeholder="اكتب نص الإشعار لجميع المستخدمين..."></textarea>
-          <button class="btn" style="margin-top:12px" id="nt-send-btn" type="button">إرسال الإشعار</button>
-        </div>
-      </section>
+    <!-- البلاغات -->
+    <section id="tab-reports" class="card hidden">
+      <h3 style="margin-top:0">البلاغات الواردة</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>المُبلَّغ عنه</th><th>السبب</th><th>المُبلِّغ</th><th>الحالة</th><th>إجراءات</th></tr>
+          </thead>
+          <tbody id="adm-reports-tbody"></tbody>
+        </table>
+      </div>
+    </section>
 
-      <section id="sec-settings" class="section">
-        <div class="panel">
-          <h3>إعدادات التطبيق وتشغيل الخدمات</h3>
-          <div class="grid-2">
-            <div><label>اسم التطبيق</label><input id="st-app-name" value="REAL VOICE" /></div>
-            <div><label>نص الترحيب</label><input id="st-welcome" /></div>
-          </div>
-          <div class="switch-row"><span>وضع الصيانة (إيقاف التطبيق مؤقتاً)</span><input type="checkbox" id="st-maint" /></div>
-          <div class="switch-row"><span>تفعيل الهدايا الثابتة</span><input type="checkbox" id="st-gifts" checked /></div>
-          <div class="switch-row"><span>تفعيل صناديق الحظ (Lucky Gifts)</span><input type="checkbox" id="st-lucky" checked /></div>
-          <div class="switch-row"><span>تفعيل إشعارات التطبيق</span><input type="checkbox" id="st-notifs" checked /></div>
-          <div class="switch-row"><span>السماح بإنشاء الغرف</span><input type="checkbox" id="st-rooms" checked /></div>
-          <button class="btn" style="margin-top:12px" id="st-save-btn" type="button">حفظ إعدادات التطبيق</button>
-        </div>
-      </section>
+    <!-- إعدادات التطبيق -->
+    <section id="tab-settings" class="card hidden">
+      <h3 style="margin-top:0">الإعدادات العامة والبنرات والإشعارات</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+        <div><label>اسم التطبيق</label><input id="st-app-name" /></div>
+        <div><label>رسالة الصيانة</label><input id="st-maint-msg" /></div>
+      </div>
+      <label>نص الترحيب في شاشة الدخول</label>
+      <input id="st-welcome-text" />
+      <label>روابط البنرات (رابط في كل سطر)</label>
+      <textarea id="st-banners" rows="3" placeholder="https://example.com/banner1.jpg"></textarea>
 
-      <section id="sec-admins" class="section">
-        <div class="panel">
-          <h3>إدارة المشرفين والصلاحيات</h3>
-          <div class="grid-2">
-            <div><label>معرف المستخدم (UID)</label><input id="adm-target-uid" placeholder="UID" /></div>
-            <div>
-              <label>الدور الإداري</label>
-              <select id="adm-role">
-                <option value="MODERATOR">MODERATOR</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn" style="margin-top:12px" id="adm-grant-btn" type="button">حفظ الصلاحية</button>
-        </div>
-      </section>
+      <div class="switch-row"><span>وضع الصيانة</span><input type="checkbox" id="st-maint" /></div>
+      <div class="switch-row"><span>تفعيل الهدايا الثابتة</span><input type="checkbox" id="st-gifts-on" /></div>
+      <div class="switch-row"><span>تفعيل صناديق الحظ</span><input type="checkbox" id="st-lucky-on" /></div>
+      <div class="switch-row"><span>السماح بإنشاء غرف جديدة</span><input type="checkbox" id="st-create-room" /></div>
 
-      <section id="sec-logs" class="section">
-        <div class="panel">
-          <h3>سجل العمليات الإدارية</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>العملية</th><th>الهدف</th><th>بواسطة</th><th>التاريخ</th></tr></thead>
-              <tbody id="logs-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
+      <button class="btn" id="st-save-btn" type="button" style="margin-top:14px">حفظ الإعدادات ✅</button>
 
-  <div id="adm-toast" class="hidden"></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:20px 0" />
+      <h4 style="margin:0 0 8px">📢 إرسال إشعار عام لجميع المستخدمين</h4>
+      <input id="bc-title" placeholder="عنوان الإشعار (اختياري)" style="margin-bottom:8px" />
+      <input id="bc-text" placeholder="نص الإشعار الجماعي..." />
+      <button class="btn gold" id="bc-send-btn" type="button" style="margin-top:10px">إرسال للجميع 🚀</button>
+    </section>
+  </main>
 
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <div id="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script>
     (function () {
+      "use strict";
       var FIREBASE_CONFIG = {
         apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
         authDomain: "real-voice-aec71.firebaseapp.com",
@@ -381,320 +353,425 @@
       var db = firebase.database(app);
 
       var state = {
-        me: null,
-        role: "",
         profiles: {},
+        wallets: {},
         rooms: {},
-        gifts: {},
-        boxes: {},
-        draws: {},
-        logs: {},
-        txs: {}
+        gifts: [],
+        luckyBoxes: [],
+        reports: {},
+        giftsTx: {},
+        settings: {},
+        currentBoxId: "",
+        editingRewards: []
       };
 
       function $(id) { return document.getElementById(id); }
-      function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-      function fmtTime(t) { if (!t) return "—"; var d = new Date(Number(t)); return d.toLocaleDateString("ar-EG") + " " + d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }); }
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      var tTimer = null;
       function toast(msg) {
-        var el = $("adm-toast");
+        var el = $("toast");
         el.textContent = msg;
-        el.classList.remove("hidden");
-        clearTimeout(window._admT);
-        window._admT = setTimeout(function () { el.classList.add("hidden"); }, 2600);
+        el.classList.add("show");
+        clearTimeout(tTimer);
+        tTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
       }
 
-      function writeAdminLog(action, target, details) {
-        if (!state.me) return;
-        db.ref("admin_logs").push({
-          action: action,
-          target: target || "",
-          details: details || "",
-          adminUid: state.me.uid,
-          adminName: state.me.displayName || state.me.email || state.me.uid,
-          createdAt: Date.now()
-        }).catch(function () { /* */ });
+      function recalcProbTotal() {
+        var sum = state.editingRewards.reduce(function (a, r) { return a + Number(r.probability || 0); }, 0);
+        var badge = $("lb-prob-total");
+        badge.textContent = "المجموع: " + sum + "%";
+        badge.className = "tag " + (sum === 100 ? "ok" : "bad");
+        return sum;
       }
 
-      function renderAll() {
-        var uList = Object.keys(state.profiles);
-        var rList = Object.keys(state.rooms);
-        var gList = Object.keys(state.gifts);
-        var bList = Object.keys(state.boxes);
-        var dList = Object.keys(state.draws).map(function (k) { return state.draws[k]; }).sort(function (a, b) { return (b.t || b.createdAt || 0) - (a.t || a.createdAt || 0); });
+      function renderRewardsEditor() {
+        var box = $("lb-rewards-list");
+        box.innerHTML = state.editingRewards.map(function (rw, idx) {
+          return '<div class="reward-row">' +
+            '<div><label>العنوان</label><input data-ridx="' + idx + '" data-rf="title" value="' + esc(rw.title || "") + '" /></div>' +
+            '<div><label>الأيقونة</label><input data-ridx="' + idx + '" data-rf="emoji" value="' + esc(rw.emoji || "🎁") + '" /></div>' +
+            '<div><label>النوع</label><select data-ridx="' + idx + '" data-rf="rewardType">' +
+              '<option value="coins"' + (rw.rewardType === "coins" ? " selected" : "") + '>عملات</option>' +
+              '<option value="gift"' + (rw.rewardType === "gift" ? " selected" : "") + '>هدية</option>' +
+              '<option value="vip"' + (rw.rewardType === "vip" ? " selected" : "") + '>VIP</option>' +
+              '<option value="badge"' + (rw.rewardType === "badge" ? " selected" : "") + '>شارة</option>' +
+              '<option value="frame"' + (rw.rewardType === "frame" ? " selected" : "") + '>إطار</option>' +
+              '<option value="perk"' + (rw.rewardType === "perk" ? " selected" : "") + '>ميزة</option>' +
+            '</select></div>' +
+            '<div><label>القيمة</label><input data-ridx="' + idx + '" data-rf="value" value="' + esc(rw.value != null ? rw.value : 0) + '" /></div>' +
+            '<div><label>الندرة</label><select data-ridx="' + idx + '" data-rf="rarity">' +
+              '<option value="common"' + (rw.rarity === "common" ? " selected" : "") + '>عادي</option>' +
+              '<option value="rare"' + (rw.rarity === "rare" ? " selected" : "") + '>نادر</option>' +
+              '<option value="epic"' + (rw.rarity === "epic" ? " selected" : "") + '>ملحمي</option>' +
+              '<option value="legendary"' + (rw.rarity === "legendary" ? " selected" : "") + '>أسطوري</option>' +
+              '<option value="mythic"' + (rw.rarity === "mythic" ? " selected" : "") + '>خرافي</option>' +
+            '</select></div>' +
+            '<div><label>الاحتمال %</label><input type="number" min="0" max="100" data-ridx="' + idx + '" data-rf="probability" value="' + Number(rw.probability || 0) + '" /></div>' +
+            '<div style="display:flex;align-items:flex-end"><button class="btn sm red" data-del-rw="' + idx + '" type="button">حذف</button></div>' +
+          '</div>';
+        }).join("");
 
-        $("kpi-users").textContent = uList.length;
-        $("kpi-rooms").textContent = rList.length;
-        $("kpi-gifts").textContent = gList.length;
-        $("kpi-boxes").textContent = bList.length;
-        $("kpi-draws").textContent = dList.length;
+        box.querySelectorAll("[data-ridx]").forEach(function (inp) {
+          inp.oninput = inp.onchange = function () {
+            var i = Number(this.getAttribute("data-ridx"));
+            var f = this.getAttribute("data-rf");
+            var val = this.value;
+            if (f === "probability") val = Number(val || 0);
+            state.editingRewards[i][f] = val;
+            recalcProbTotal();
+          };
+        });
+        box.querySelectorAll("[data-del-rw]").forEach(function (btn) {
+          btn.onclick = function () {
+            state.editingRewards.splice(Number(btn.getAttribute("data-del-rw")), 1);
+            renderRewardsEditor();
+            recalcProbTotal();
+          };
+        });
+        recalcProbTotal();
+      }
 
-        $("dash-draws-tbody").innerHTML = dList.slice(0, 15).map(function (d) {
-          return "<tr><td>" + esc(d.userName || d.userId || "") + "</td><td>" + esc(d.boxName || "") + "</td><td>" + esc((d.emoji || "") + " " + (d.title || "")) + "</td><td><span class='pill'>" + esc(d.rarity || "") + "</span></td><td>" + fmtTime(d.t || d.createdAt) + "</td></tr>";
-        }).join("") || "<tr><td colspan='5'>لا توجد سحوبات بعد</td></tr>";
+      function selectLuckyBox(boxId) {
+        var b = state.luckyBoxes.find(function (x) { return x.id === boxId; }) || state.luckyBoxes[0];
+        if (!b) return;
+        state.currentBoxId = b.id;
+        $("lb-select").value = b.id;
+        $("lb-id").value = b.id || "";
+        $("lb-name").value = b.name || "";
+        $("lb-icon").value = b.icon || "🎁";
+        $("lb-price").value = Number(b.price || 0);
+        $("lb-active").checked = b.active !== false;
+        state.editingRewards = Array.isArray(b.rewards) ? b.rewards.map(function (r) { return Object.assign({}, r); }) : [];
+        renderRewardsEditor();
+      }
 
-        var q = ($("usr-search").value || "").trim().toLowerCase();
-        var filteredUsers = uList.filter(function (uidKey) {
-          var p = state.profiles[uidKey] || {};
+      function renderAllAdmin() {
+        var uKeys = Object.keys(state.profiles || {});
+        var rKeys = Object.keys(state.rooms || {});
+        var repList = Object.keys(state.reports || {}).map(function (k) { return Object.assign({ id: k }, state.reports[k]); });
+        var openReps = repList.filter(function (x) { return x.status !== "closed"; });
+
+        $("st-users").textContent = String(uKeys.length);
+        $("st-rooms").textContent = String(rKeys.length);
+        $("st-gifts-tx").textContent = String(Object.keys(state.giftsTx || {}).length);
+        $("st-reports").textContent = String(openReps.length);
+
+        var q = ($("adm-user-search").value || "").trim().toLowerCase();
+        var filteredUsers = uKeys.map(function (k) { return state.profiles[k]; }).filter(function (u) {
+          if (!u) return false;
           if (!q) return true;
-          return String(p.name || "").toLowerCase().indexOf(q) >= 0 || String(p.specialId || "").toLowerCase().indexOf(q) >= 0 || uidKey.toLowerCase().indexOf(q) >= 0;
-        });
+          return String(u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").toLowerCase().indexOf(q) >= 0 || String(u.id || "").toLowerCase().indexOf(q) >= 0;
+        }).slice(0, 60);
 
-        $("users-tbody").innerHTML = filteredUsers.slice(0, 60).map(function (uidKey) {
-          var p = state.profiles[uidKey] || {};
-          return "<tr><td>" + esc(p.name || "مستخدم") + "</td><td>" + esc(p.specialId || uidKey) + "</td><td>VIP " + Number(p.vip || 0) + "</td><td>Lv." + Number(p.level || 1) + "</td><td>" + (p.online ? "<span class='pill ok'>متصل</span>" : "<span class='pill'>غير متصل</span>") + "</td><td><button class='btn sm ghost' onclick=\"document.getElementById('wal-uid').value='" + esc(uidKey) + "';toast('تم تحديد UID في إدارة العملات')\">عملات</button></td></tr>";
-        }).join("") || "<tr><td colspan='6'>لا يوجد مستخدمون</td></tr>";
+        $("adm-users-tbody").innerHTML = filteredUsers.map(function (u) {
+          var w = state.wallets[u.id];
+          var bal = w && typeof w === "object" ? Number(w.balance || 0) : Number(w || 0);
+          return '<tr>' +
+            '<td><b>' + esc(u.name || "مستخدم") + '</b></td>' +
+            '<td>' + esc(u.specialId || u.id) + '</td>' +
+            '<td><b>' + bal.toLocaleString("en-US") + '</b></td>' +
+            '<td>VIP ' + Number(u.vip || 0) + '</td>' +
+            '<td>' + (u.isAdmin ? '<span class="tag gold">مدير</span>' : '<span class="tag">عضو</span>') + '</td>' +
+            '<td style="display:flex;gap:5px;flex-wrap:wrap">' +
+              '<button class="btn sm ok" data-add-coins="' + esc(u.id) + '" type="button">+100 🪙</button>' +
+              '<button class="btn sm gold" data-toggle-vip="' + esc(u.id) + '" type="button">VIP+1</button>' +
+              '<button class="btn sm ghost" data-toggle-admin="' + esc(u.id) + '" type="button">' + (u.isAdmin ? 'إلغاء إدارة' : 'تعيين مدير') + '</button>' +
+            '</td>' +
+          '</tr>';
+        }).join("");
 
-        $("gifts-tbody").innerHTML = gList.map(function (gidKey) {
-          var g = state.gifts[gidKey] || {};
-          return "<tr><td>" + esc(g.e || "🎁") + "</td><td>" + esc(g.n || gidKey) + "</td><td>" + (g.isFree || Number(g.p || 0) === 0 ? "مجانية" : Number(g.p || 0) + " 🪙") + "</td><td>" + esc(g.cat || "popular") + "</td><td>" + (g.active !== false ? "<span class='pill ok'>مفعلة</span>" : "<span class='pill bad'>متوقفة</span>") + "</td><td><button class='btn sm red' data-del-gift='" + esc(gidKey) + "'>حذف</button></td></tr>";
-        }).join("") || "<tr><td colspan='6'>لا توجد هدايا مضافة في قاعدة البيانات بعد (التطبيق يستخدم الافتراضية تلقائياً)</td></tr>";
-
-        document.querySelectorAll("[data-del-gift]").forEach(function (btn) {
-          btn.onclick = function () {
-            var k = btn.getAttribute("data-del-gift");
-            db.ref("gifts/" + k).remove().then(function () { writeAdminLog("delete_gift", k, "حذف هدية ثابتة"); toast("تم حذف الهدية"); });
+        $("adm-users-tbody").querySelectorAll("[data-add-coins]").forEach(function (b) {
+          b.onclick = function () {
+            var uid = b.getAttribute("data-add-coins");
+            db.ref("economy/wallets/" + uid + "/balance").transaction(function (c) { return Number(c || 0) + 100; });
+            toast("تمت إضافة 100 عملة ✅");
           };
         });
-
-        $("lucky-tbody").innerHTML = bList.map(function (bidKey) {
-          var b = state.boxes[bidKey] || {};
-          var sumProb = (b.rewards || []).reduce(function (a, r) { return a + Number(r.probability || 0); }, 0);
-          return "<tr><td>" + esc(b.name || bidKey) + "</td><td>" + Number(b.price || 0) + " 🪙</td><td>" + ((b.rewards || []).length) + "</td><td><span class='pill " + (sumProb === 100 ? "ok" : "bad") + "'>" + sumProb + "%</span></td><td>" + (b.active !== false ? "مفعل" : "متوقف") + "</td></tr>";
-        }).join("") || "<tr><td colspan='5'>لا توجد صناديق مخصصة في قاعدة البيانات بعد</td></tr>";
-
-        $("rooms-tbody").innerHTML = rList.map(function (ridKey) {
-          var r = state.rooms[ridKey] || {};
-          return "<tr><td>" + esc(r.name || ridKey) + "</td><td>" + esc(r.cat || "chat") + "</td><td>" + esc(r.owner || "") + "</td><td>" + (r.locked ? "<span class='pill bad'>مقفلة</span>" : "<span class='pill ok'>مفتوحة</span>") + "</td><td><button class='btn sm ghost' data-tog-room='" + esc(ridKey) + "'>" + (r.locked ? "فتح" : "إغلاق") + "</button> <button class='btn sm red' data-del-room='" + esc(ridKey) + "'>حذف</button></td></tr>";
-        }).join("") || "<tr><td colspan='5'>لا توجد غرف</td></tr>";
-
-        document.querySelectorAll("[data-tog-room]").forEach(function (btn) {
-          btn.onclick = function () {
-            var ridKey = btn.getAttribute("data-tog-room");
-            var cur = !!(state.rooms[ridKey] && state.rooms[ridKey].locked);
-            db.ref("rooms/" + ridKey + "/locked").set(!cur).then(function () { writeAdminLog("toggle_room_lock", ridKey, !cur ? "إغلاق" : "فتح"); toast("تم تحديث حالة الغرفة"); });
+        $("adm-users-tbody").querySelectorAll("[data-toggle-vip]").forEach(function (b) {
+          b.onclick = function () {
+            var uid = b.getAttribute("data-toggle-vip");
+            var cur = Number((state.profiles[uid] && state.profiles[uid].vip) || 0);
+            var next = cur >= 3 ? 0 : cur + 1;
+            var exp = next > 0 ? Date.now() + 7 * 86400000 : 0;
+            db.ref().update({ ["users/" + uid + "/vip"]: next, ["users/" + uid + "/vipExpiresAt"]: exp, ["publicProfiles/" + uid + "/vip"]: next, ["publicProfiles/" + uid + "/vipExpiresAt"]: exp });
+            toast("تم تحديث VIP إلى " + next);
           };
         });
-        document.querySelectorAll("[data-del-room]").forEach(function (btn) {
-          btn.onclick = function () {
-            var ridKey = btn.getAttribute("data-del-room");
-            db.ref("rooms/" + ridKey).remove().then(function () { writeAdminLog("delete_room", ridKey, "حذف غرفة"); toast("تم حذف الغرفة"); });
-          };
-        });
-
-        var txArr = Object.keys(state.txs).map(function (k) { return Object.assign({ id: k }, state.txs[k]); }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-        $("wallet-logs-tbody").innerHTML = txArr.slice(0, 25).map(function (t) {
-          return "<tr><td>" + esc(t.id) + "</td><td>" + esc(t.op || "هدية") + "</td><td>" + esc(t.reason || t.giftName || "") + " (" + Number(t.amount || t.totalCost || 0) + ")</td><td>" + esc(t.adminName || t.fromName || "") + "</td><td>" + fmtTime(t.createdAt) + "</td></tr>";
-        }).join("") || "<tr><td colspan='5'>لا توجد حركات مسجلة</td></tr>";
-
-        var logArr = Object.keys(state.logs).map(function (k) { return state.logs[k]; }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-        $("logs-tbody").innerHTML = logArr.slice(0, 30).map(function (l) {
-          return "<tr><td>" + esc(l.action || "") + "</td><td>" + esc(l.target || "") + "</td><td>" + esc(l.adminName || "") + "</td><td>" + fmtTime(l.createdAt) + "</td></tr>";
-        }).join("") || "<tr><td colspan='4'>لا توجد سجلات بعد</td></tr>";
-      }
-
-      function bindAdminActions() {
-        document.querySelectorAll(".nav-item").forEach(function (btn) {
-          btn.onclick = function () {
-            var sec = btn.getAttribute("data-sec");
-            document.querySelectorAll(".nav-item").forEach(function (b) { b.classList.toggle("active", b === btn); });
-            document.querySelectorAll(".section").forEach(function (s) { s.classList.toggle("active", s.id === "sec-" + sec); });
+        $("adm-users-tbody").querySelectorAll("[data-toggle-admin]").forEach(function (b) {
+          b.onclick = function () {
+            var uid = b.getAttribute("data-toggle-admin");
+            var nextAdm = !(state.profiles[uid] && state.profiles[uid].isAdmin);
+            db.ref().update({ ["users/" + uid + "/isAdmin"]: nextAdm, ["publicProfiles/" + uid + "/isAdmin"]: nextAdm });
+            toast("تم تحديث صلاحية الإدارة");
           };
         });
 
-        $("usr-search").oninput = renderAll;
+        $("adm-rooms-tbody").innerHTML = rKeys.map(function (rid) {
+          var r = state.rooms[rid];
+          var ownerName = (state.profiles[r.owner] && state.profiles[r.owner].name) || r.owner || "—";
+          return '<tr>' +
+            '<td><b>' + esc(r.name || rid) + '</b></td>' +
+            '<td>' + esc(ownerName) + '</td>' +
+            '<td>' + ((r.seats && r.seats.length) || 9) + '</td>' +
+            '<td>' + (r.locked ? '<span class="tag bad">مقفلة</span>' : '<span class="tag ok">نشطة</span>') + '</td>' +
+            '<td style="display:flex;gap:5px">' +
+              '<button class="btn sm ghost" data-lock-room="' + esc(rid) + '" type="button">' + (r.locked ? 'فتح' : 'قفل') + '</button>' +
+              '<button class="btn sm red" data-del-room="' + esc(rid) + '" type="button">حذف</button>' +
+            '</td>' +
+          '</tr>';
+        }).join("");
 
-        $("wal-apply-btn").onclick = async function () {
-          var targetUid = ($("wal-uid").value || "").trim();
-          var op = $("wal-op").value;
-          var amount = Math.max(0, Number($("wal-amount").value || 0));
-          var reason = ($("wal-reason").value || "تعديل إداري").trim();
-          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
-          var ref = db.ref("economy/wallets/" + targetUid + "/balance");
-          await ref.transaction(function (cur) {
-            var v = Math.max(0, Number(cur || 0));
-            if (op === "add") return v + amount;
-            if (op === "deduct") return Math.max(0, v - amount);
-            return amount;
-          });
-          await db.ref("wallet_transactions").push({
-            targetUid: targetUid, op: op, amount: amount, reason: reason,
-            adminUid: state.me.uid, adminName: state.me.displayName || state.me.email || state.me.uid, createdAt: Date.now()
-          });
-          writeAdminLog("wallet_" + op, targetUid, amount + " — " + reason);
-          toast("تم تنفيذ عملية العملات بنجاح ✅");
-        };
-
-        $("g-save-btn").onclick = async function () {
-          var gid = ($("g-id").value || "").trim() || ("gift_" + Date.now().toString(36));
-          var gname = ($("g-name").value || "").trim();
-          if (!gname) { toast("اكتب اسم الهدية"); return; }
-          var gObj = {
-            id: gid,
-            n: gname,
-            e: ($("g-emoji").value || "🎁").trim(),
-            gifUrl: ($("g-gif").value || "").trim(),
-            p: Math.max(0, Number($("g-price").value || 0)),
-            cat: $("g-cat").value,
-            isFree: $("g-free").checked || Number($("g-price").value || 0) === 0,
-            isEvent: $("g-event").checked,
-            active: $("g-active").checked
+        $("adm-rooms-tbody").querySelectorAll("[data-lock-room]").forEach(function (b) {
+          b.onclick = function () {
+            var rid = b.getAttribute("data-lock-room");
+            db.ref("rooms/" + rid + "/locked").set(!state.rooms[rid].locked);
           };
-          await db.ref("gifts/" + gid).set(gObj);
-          writeAdminLog("save_gift", gid, gname);
-          toast("تم حفظ الهدية الثابتة ✅");
-        };
-
-        $("lb-load-btn").onclick = function () {
-          var bid = ($("lb-id").value || "").trim();
-          var box = state.boxes[bid];
-          if (!box) { toast("الصندوق غير موجود في قاعدة البيانات بعد"); return; }
-          $("lb-name").value = box.name || "";
-          $("lb-price").value = Number(box.price || 0);
-          $("lb-active").value = box.active === false ? "0" : "1";
-          $("lb-rewards-json").value = JSON.stringify(box.rewards || [], null, 2);
-          toast("تم تحميل بيانات الصندوق");
-        };
-
-        $("lb-save-btn").onclick = async function () {
-          var bid = ($("lb-id").value || "").trim() || ("box_" + Date.now().toString(36));
-          var bname = ($("lb-name").value || "").trim();
-          var rewards = [];
-          try {
-            rewards = JSON.parse($("lb-rewards-json").value || "[]");
-            if (!Array.isArray(rewards) || !rewards.length) throw new Error("empty");
-          } catch (e) {
-            toast("صيغة JSON للجوائز غير صحيحة");
-            return;
-          }
-          var totalProb = rewards.reduce(function (acc, item) { return acc + Number(item.probability || 0); }, 0);
-          if (Math.round(totalProb) !== 100) {
-            toast("يجب أن يساوي مجموع نسب الاحتمالات 100% (المجموع الحالي: " + totalProb + "%)");
-            return;
-          }
-          var boxObj = {
-            id: bid,
-            name: bname || "صندوق حظ",
-            price: Math.max(0, Number($("lb-price").value || 0)),
-            active: $("lb-active").value === "1",
-            rewards: rewards
+        });
+        $("adm-rooms-tbody").querySelectorAll("[data-del-room]").forEach(function (b) {
+          b.onclick = function () {
+            var rid = b.getAttribute("data-del-room");
+            db.ref("rooms/" + rid).remove();
+            toast("تم حذف الغرفة");
           };
-          await db.ref("lucky_boxes/" + bid).set(boxObj);
-          writeAdminLog("save_lucky_box", bid, bname + " (100%)");
-          toast("تم حفظ صندوق الحظ ونسب الاحتمالات (100%) ✅");
-        };
+        });
 
-        $("vip-apply-btn").onclick = async function () {
-          var targetUid = ($("vip-uid").value || "").trim();
-          var lv = Math.max(0, Number($("vip-level").value || 0));
-          var days = Math.max(1, Number($("vip-days").value || 30));
-          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
-          var exp = lv > 0 ? Date.now() + days * 86400000 : 0;
-          await db.ref("users/" + targetUid).update({ vip: lv, vipExpiresAt: exp });
-          await db.ref("publicProfiles/" + targetUid).update({ vip: lv, vipExpiresAt: exp });
-          writeAdminLog("set_vip", targetUid, "VIP " + lv + " لـ " + days + " يوم");
-          toast("تم تحديث عضوية VIP ✅");
-        };
+        $("adm-gifts-tbody").innerHTML = (state.gifts || []).map(function (g, idx) {
+          return '<tr>' +
+            '<td style="font-size:22px">' + (g.gifUrl ? '<img src="' + esc(g.gifUrl) + '" style="width:28px;height:28px;object-fit:contain" />' : esc(g.e || "🎁")) + '</td>' +
+            '<td><b>' + esc(g.n || g.id) + '</b></td>' +
+            '<td>' + (g.isFree || Number(g.p || 0) === 0 ? '<span class="tag ok">مجانية</span>' : '🪙 ' + Number(g.p || 0)) + '</td>' +
+            '<td>' + esc(g.cat || "popular") + '</td>' +
+            '<td>' + (g.active !== false ? '<span class="tag ok">مفعلة</span>' : '<span class="tag bad">معطلة</span>') + '</td>' +
+            '<td style="display:flex;gap:5px">' +
+              '<button class="btn sm ghost" data-edit-gift="' + idx + '" type="button">تعديل</button>' +
+              '<button class="btn sm red" data-del-gift="' + idx + '" type="button">حذف</button>' +
+            '</td>' +
+          '</tr>';
+        }).join("");
 
-        $("nt-send-btn").onclick = async function () {
-          var title = ($("nt-title").value || "").trim();
-          var bodyTxt = ($("nt-body").value || "").trim();
-          if (!bodyTxt) { toast("اكتب نص الإشعار"); return; }
-          await db.ref("broadcast_notifications").push({
-            title: title || "إعلان",
-            text: bodyTxt,
-            type: "broadcast",
-            createdAt: Date.now()
-          });
-          writeAdminLog("send_notification", "all", title || bodyTxt);
-          $("nt-body").value = "";
-          toast("تم إرسال الإشعار العام ✅");
-        };
-
-        $("st-save-btn").onclick = async function () {
-          var stObj = {
-            appName: ($("st-app-name").value || "REAL VOICE").trim(),
-            welcomeText: ($("st-welcome").value || "").trim(),
-            maintenanceMode: $("st-maint").checked,
-            giftsEnabled: $("st-gifts").checked,
-            luckyGiftsEnabled: $("st-lucky").checked,
-            notificationsEnabled: $("st-notifs").checked,
-            allowCreateRoom: $("st-rooms").checked
+        $("adm-gifts-tbody").querySelectorAll("[data-edit-gift]").forEach(function (b) {
+          b.onclick = function () {
+            var g = state.gifts[Number(b.getAttribute("data-edit-gift"))];
+            if (!g) return;
+            $("gf-id").value = g.id || "";
+            $("gf-name").value = g.n || "";
+            $("gf-emoji").value = g.e || "";
+            $("gf-url").value = g.gifUrl || "";
+            $("gf-price").value = Number(g.p || 0);
+            $("gf-cat").value = g.cat || "popular";
+            $("gf-vip").value = Number(g.vipMin || 0);
+            $("gf-free").checked = !!g.isFree;
+            $("gf-event").checked = !!g.isEvent;
+            $("gf-active").checked = g.active !== false;
           };
-          await db.ref("app_settings").set(stObj);
-          writeAdminLog("update_app_settings", "app_settings", JSON.stringify(stObj));
-          toast("تم حفظ إعدادات التطبيق ✅");
-        };
+        });
+        $("adm-gifts-tbody").querySelectorAll("[data-del-gift]").forEach(function (b) {
+          b.onclick = function () {
+            var idx = Number(b.getAttribute("data-del-gift"));
+            state.gifts.splice(idx, 1);
+            db.ref("gifts").set(state.gifts);
+            toast("تم حذف الهدية");
+          };
+        });
 
-        $("adm-grant-btn").onclick = async function () {
-          if (state.role !== "SUPER_ADMIN") {
-            toast("إضافة وتعديل المشرفين متاح لـ SUPER_ADMIN فقط");
-            return;
-          }
-          var targetUid = ($("adm-target-uid").value || "").trim();
-          var role = $("adm-role").value;
-          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
-          await db.ref("admin_users/" + targetUid).set({ uid: targetUid, role: role, updatedAt: Date.now() });
-          await db.ref("users/" + targetUid).update({ isAdmin: true, adminRole: role });
-          writeAdminLog("grant_admin_role", targetUid, role);
-          toast("تم تعيين صلاحية " + role + " ✅");
-        };
-      }
-
-      async function verifyAdminAndStart(user) {
-        state.me = user;
-        var adminSnap = await db.ref("admin_users/" + user.uid).once("value");
-        var uSnap = await db.ref("users/" + user.uid).once("value");
-        var adminRec = adminSnap.val() || {};
-        var uRec = uSnap.val() || {};
-        var role = adminRec.role || uRec.adminRole || (uRec.isAdmin ? "ADMIN" : "");
-
-        if (!role) {
-          $("adm-gate-msg").textContent = "هذا الحساب (" + user.uid + ") لا يملك صلاحية إدارية في admin_users.";
-          return;
+        var selEl = $("lb-select");
+        selEl.innerHTML = state.luckyBoxes.map(function (b) {
+          return '<option value="' + esc(b.id) + '">' + esc(b.name) + ' (' + esc(b.id) + ')</option>';
+        }).join("");
+        if (!state.currentBoxId && state.luckyBoxes[0]) state.currentBoxId = state.luckyBoxes[0].id;
+        if (state.currentBoxId && document.activeElement !== $("lb-id") && document.activeElement !== $("lb-name")) {
+          selectLuckyBox(state.currentBoxId);
         }
 
-        state.role = role;
-        $("adm-gate").classList.add("hidden");
-        $("adm-shell").classList.remove("hidden");
-        $("adm-user-badge").textContent = (user.displayName || user.email || user.uid) + " • " + role;
+        $("adm-reports-tbody").innerHTML = repList.length ? repList.map(function (rp) {
+          return '<tr>' +
+            '<td><b>' + esc(rp.targetName || rp.targetId) + '</b></td>' +
+            '<td>' + esc(rp.reason || "") + '</td>' +
+            '<td>' + esc(rp.reporterName || rp.reporterId) + '</td>' +
+            '<td>' + (rp.status === "closed" ? '<span class="tag ok">مغلق</span>' : '<span class="tag bad">مفتوح</span>') + '</td>' +
+            '<td><button class="btn sm ok" data-close-rep="' + esc(rp.id) + '" type="button">إغلاق</button></td>' +
+          '</tr>';
+        }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted)">لا توجد بلاغات</td></tr>';
 
-        bindAdminActions();
+        $("adm-reports-tbody").querySelectorAll("[data-close-rep]").forEach(function (b) {
+          b.onclick = function () { db.ref("reports/" + b.getAttribute("data-close-rep") + "/status").set("closed"); };
+        });
 
-        db.ref("publicProfiles").on("value", function (s) { state.profiles = s.val() || {}; renderAll(); });
-        db.ref("rooms").on("value", function (s) { state.rooms = s.val() || {}; renderAll(); });
-        db.ref("gifts").on("value", function (s) { state.gifts = s.val() || {}; renderAll(); });
-        db.ref("lucky_boxes").on("value", function (s) { state.boxes = s.val() || {}; renderAll(); });
-        db.ref("lucky_draws").limitToLast(50).on("value", function (s) { state.draws = s.val() || {}; renderAll(); });
-        db.ref("admin_logs").limitToLast(50).on("value", function (s) { state.logs = s.val() || {}; renderAll(); });
-        db.ref("wallet_transactions").limitToLast(50).on("value", function (s) { state.txs = s.val() || {}; renderAll(); });
-        db.ref("app_settings").once("value", function (s) {
-          var st = s.val();
-          if (st) {
-            if (st.appName) $("st-app-name").value = st.appName;
-            if (st.welcomeText) $("st-welcome").value = st.welcomeText;
-            $("st-maint").checked = !!st.maintenanceMode;
-            $("st-gifts").checked = st.giftsEnabled !== false;
-            $("st-lucky").checked = st.luckyGiftsEnabled !== false;
-            $("st-notifs").checked = st.notificationsEnabled !== false;
-            $("st-rooms").checked = st.allowCreateRoom !== false;
-          }
+        var st = state.settings || {};
+        if (document.activeElement !== $("st-app-name")) $("st-app-name").value = st.appName || "REAL VOICE";
+        if (document.activeElement !== $("st-maint-msg")) $("st-maint-msg").value = st.maintenanceMessage || "التطبيق قيد الصيانة والتحديث حالياً، سنعود قريباً.";
+        if (document.activeElement !== $("st-welcome-text")) $("st-welcome-text").value = st.welcomeText || "سجّل الدخول بحساب Google أو ابدأ كزائر وادخل إلى الغرف الصوتية.";
+        $("st-maint").checked = !!st.maintenanceMode;
+        $("st-gifts-on").checked = st.giftsEnabled !== false;
+        $("st-lucky-on").checked = st.luckyGiftsEnabled !== false;
+        $("st-create-room").checked = st.allowCreateRoom !== false;
+      }
+
+      function startAdminListeners(user) {
+        $("gate-box").classList.add("hidden");
+        $("admin-main").classList.remove("hidden");
+        $("adm-signout-btn").classList.remove("hidden");
+        $("admin-who").textContent = (user.displayName || user.email || "مدير");
+
+        db.ref("publicProfiles").on("value", function (s) { state.profiles = s.val() || {}; renderAllAdmin(); });
+        db.ref("economy/wallets").on("value", function (s) { state.wallets = s.val() || {}; renderAllAdmin(); });
+        db.ref("rooms").on("value", function (s) { state.rooms = s.val() || {}; renderAllAdmin(); });
+        db.ref("reports").on("value", function (s) { state.reports = s.val() || {}; renderAllAdmin(); });
+        db.ref("gift_transactions").on("value", function (s) { state.giftsTx = s.val() || {}; renderAllAdmin(); });
+        db.ref("gifts").on("value", function (s) {
+          var v = s.val();
+          state.gifts = Array.isArray(v) ? v.filter(Boolean) : (v ? Object.keys(v).map(function (k) { return Object.assign({ id: k }, v[k]); }) : []);
+          renderAllAdmin();
+        });
+        db.ref("lucky_boxes").on("value", function (s) {
+          var v = s.val();
+          state.luckyBoxes = Array.isArray(v) ? v.filter(Boolean) : (v ? Object.keys(v).map(function (k) { return Object.assign({ id: k }, v[k]); }) : []);
+          renderAllAdmin();
+        });
+        db.ref("app_settings").on("value", function (s) {
+          state.settings = s.val() || {};
+          renderAllAdmin();
+        });
+        db.ref("banners").once("value", function (s) {
+          var bv = s.val();
+          var arr = Array.isArray(bv) ? bv.filter(Boolean) : (bv ? Object.keys(bv).map(function (k) { return bv[k]; }).filter(Boolean) : []);
+          $("st-banners").value = arr.join("\n");
         });
       }
 
-      $("adm-google-btn").onclick = function () {
+      auth.onAuthStateChanged(async function (user) {
+        if (!user) {
+          $("gate-box").classList.remove("hidden");
+          $("admin-main").classList.add("hidden");
+          $("adm-signout-btn").classList.add("hidden");
+          $("admin-who").textContent = "غير مسجل";
+          return;
+        }
+        try {
+          var snap = await db.ref("users/" + user.uid).once("value");
+          var uData = snap.val() || {};
+          if (uData.isAdmin || uData.adminRole) {
+            startAdminListeners(user);
+          } else {
+            $("gate-msg").textContent = "هذا الحساب لا يملك صلاحية إدارة حالياً (UID: " + user.uid + ")";
+            toast("لا تملك صلاحية إدارة على هذا الحساب");
+          }
+        } catch (e) {
+          $("gate-msg").textContent = "تعذر التحقق من صلاحيات الحساب";
+        }
+      });
+
+      $("adm-google-btn").onclick = async function () {
         var provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(function (e) {
-          $("adm-gate-msg").textContent = e && e.message ? e.message : "تعذر تسجيل الدخول";
+        provider.setCustomParameters({ prompt: "select_account" });
+        try { await auth.signInWithPopup(provider); }
+        catch (e) { await auth.signInWithRedirect(provider); }
+      };
+      $("adm-signout-btn").onclick = function () { auth.signOut(); };
+
+      document.querySelectorAll("#adm-tabs .tab").forEach(function (t) {
+        t.onclick = function () {
+          var tab = t.getAttribute("data-tab");
+          document.querySelectorAll("#adm-tabs .tab").forEach(function (x) { x.classList.toggle("active", x === t); });
+          document.querySelectorAll("main section.card").forEach(function (sec) { sec.classList.toggle("hidden", sec.id !== "tab-" + tab); });
+        };
+      });
+
+      $("adm-user-search").oninput = renderAllAdmin;
+
+      $("gf-save-btn").onclick = function () {
+        var id = ($("gf-id").value || "").trim() || ("gift_" + Date.now().toString(36));
+        var name = ($("gf-name").value || "").trim();
+        var emoji = ($("gf-emoji").value || "🎁").trim();
+        var gifUrl = ($("gf-url").value || "").trim();
+        var isFree = !!$("gf-free").checked;
+        var price = isFree ? 0 : Math.max(0, Number($("gf-price").value || 0));
+        var cat = $("gf-cat").value || "popular";
+        var vipMin = Math.max(0, Math.min(3, Number($("gf-vip").value || 0)));
+        var isEvent = !!$("gf-event").checked;
+        var active = !!$("gf-active").checked;
+        if (!name) { toast("اكتب اسم الهدية"); return; }
+
+        var obj = { id: id, n: name, e: emoji, gifUrl: gifUrl, p: price, cat: cat, vipMin: vipMin, isFree: isFree, isEvent: isEvent, active: active };
+        var idx = state.gifts.findIndex(function (x) { return x.id === id; });
+        if (idx >= 0) state.gifts[idx] = obj;
+        else state.gifts.push(obj);
+        db.ref("gifts").set(state.gifts).then(function () { toast("تم حفظ الهدية ✅"); });
+      };
+
+      $("gf-reset-btn").onclick = function () {
+        $("gf-id").value = ""; $("gf-name").value = ""; $("gf-emoji").value = ""; $("gf-url").value = "";
+        $("gf-price").value = "50"; $("gf-cat").value = "popular"; $("gf-vip").value = "0";
+        $("gf-free").checked = false; $("gf-event").checked = false; $("gf-active").checked = true;
+      };
+
+      $("lb-select").onchange = function () { selectLuckyBox(this.value); };
+      $("lb-add-reward-btn").onclick = function () {
+        state.editingRewards.push({ id: "rw_" + Date.now().toString(36), title: "جائزة جديدة", emoji: "🎁", rewardType: "coins", value: 50, rarity: "common", probability: 0 });
+        renderRewardsEditor();
+      };
+      $("lb-save-btn").onclick = function () {
+        var sum = recalcProbTotal();
+        if (sum !== 100) { toast("مجموع نسب الاحتمالات يجب أن يساوي 100% (الحالي: " + sum + "%)"); return; }
+        var id = ($("lb-id").value || "").trim();
+        var name = ($("lb-name").value || "").trim();
+        if (!id || !name) { toast("أدخل معرّف واسم الصندوق"); return; }
+        var boxObj = {
+          id: id,
+          name: name,
+          icon: ($("lb-icon").value || "🎁").trim(),
+          price: Math.max(0, Number($("lb-price").value || 0)),
+          active: !!$("lb-active").checked,
+          rewards: state.editingRewards
+        };
+        var idx = state.luckyBoxes.findIndex(function (x) { return x.id === id; });
+        if (idx >= 0) state.luckyBoxes[idx] = boxObj;
+        else state.luckyBoxes.push(boxObj);
+        state.currentBoxId = id;
+        db.ref("lucky_boxes").set(state.luckyBoxes).then(function () { toast("تم حفظ صندوق الحظ ✅"); });
+      };
+      $("lb-delete-btn").onclick = function () {
+        var id = ($("lb-id").value || "").trim();
+        if (!id) return;
+        state.luckyBoxes = state.luckyBoxes.filter(function (x) { return x.id !== id; });
+        state.currentBoxId = state.luckyBoxes[0] ? state.luckyBoxes[0].id : "";
+        db.ref("lucky_boxes").set(state.luckyBoxes).then(function () { toast("تم حذف الصندوق"); });
+      };
+
+      $("st-save-btn").onclick = function () {
+        var stObj = {
+          appName: ($("st-app-name").value || "REAL VOICE").trim(),
+          maintenanceMessage: ($("st-maint-msg").value || "").trim(),
+          welcomeText: ($("st-welcome-text").value || "").trim(),
+          maintenanceMode: !!$("st-maint").checked,
+          giftsEnabled: !!$("st-gifts-on").checked,
+          luckyGiftsEnabled: !!$("st-lucky-on").checked,
+          allowCreateRoom: !!$("st-create-room").checked
+        };
+        var banners = ($("st-banners").value || "").split(/\r?\n/).map(function (s) { return s.trim(); }).filter(function (s) { return /^https?:\/\//i.test(s); });
+        Promise.all([
+          db.ref("app_settings").set(stObj),
+          db.ref("banners").set(banners)
+        ]).then(function () { toast("تم حفظ إعدادات التطبيق والبنرات ✅"); });
+      };
+
+      $("bc-send-btn").onclick = function () {
+        var title = ($("bc-title").value || "").trim();
+        var text = ($("bc-text").value || "").trim();
+        if (!text) { toast("اكتب نص الإشعار أولاً"); return; }
+        var id = "bc_" + Date.now().toString(36);
+        db.ref("broadcast_notifications/" + id).set({
+          id: id, title: title, text: text, type: "broadcast", createdAt: Date.now()
+        }).then(function () {
+          $("bc-title").value = "";
+          $("bc-text").value = "";
+          toast("تم إرسال الإشعار للجميع ✅");
         });
       };
-
-      $("adm-logout-btn").onclick = function () {
-        auth.signOut().then(function () { location.reload(); });
-      };
-
-      auth.onAuthStateChanged(function (user) {
-        if (user && user.uid) verifyAdminAndStart(user);
-      });
     })();
   </script>
 </body>
