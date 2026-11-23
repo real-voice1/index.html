@@ -185,6 +185,18 @@
         <h3 style="margin:0">إدارة الأعضاء والعملات و VIP</h3>
         <input id="adm-user-search" type="search" placeholder="ابحث بالاسم أو ID..." style="max-width:260px;margin:0" />
       </div>
+      <div class="card" style="background:var(--panel-2);margin-bottom:14px">
+        <h4 style="margin:0 0 10px">💰 منح / خصم كوينزات لمستخدم</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+          <div><label>المستخدم (ID خاص / UID / الاسم)</label><input id="cg-user" placeholder="مثال: 1000001" /></div>
+          <div><label>عدد الكوينزات (سالب للخصم)</label><input id="cg-amount" type="number" value="1000" /></div>
+          <div><label>ملاحظة (تظهر في سجل المحفظة)</label><input id="cg-note" placeholder="هدية من الإدارة" /></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <button class="btn ok" id="cg-send-btn" type="button">تنفيذ ✅</button>
+          <span id="cg-preview" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -237,6 +249,7 @@
             <option value="free">مجانية</option>
             <option value="vip">VIP</option>
             <option value="events">مناسبات</option>
+            <option value="lucky">🍀 حظ</option>
           </select>
         </div>
         <div><label>الحد الأدنى لـ VIP</label><input id="gf-vip" type="number" min="0" max="3" value="0" /></div>
@@ -244,6 +257,7 @@
       <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px">
         <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-free" /> هدية مجانية</label>
         <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-event" /> هدية مناسبات</label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-lucky" /> 🍀 هدية حظ (ترجع عملات بمضاعف)</label>
         <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="gf-active" checked /> مفعلة</label>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
@@ -287,6 +301,17 @@
         <button class="btn ghost" id="lb-add-reward-btn" type="button">+ إضافة جائزة</button>
         <button class="btn ok" id="lb-save-btn" type="button">حفظ الصندوق ✅</button>
         <button class="btn red" id="lb-delete-btn" type="button">حذف الصندوق</button>
+      </div>
+    
+      <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--line)">
+        <h3 style="margin:0 0 6px">🍀 جدول مضاعفات هدايا الحظ</h3>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">كل سطر بصيغة <b>المضاعف:النسبة%</b> (مثال <b>10:1.2</b>). المجموع لازم يساوي 100%. النسب تظهر للمستخدمين في نافذة الهدايا.</div>
+        <textarea id="lt-text" rows="7" style="width:100%"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+          <span id="lt-stats" class="tag gold">—</span>
+          <button class="btn ok" id="lt-save-btn" type="button">حفظ الجدول ✅</button>
+          <button class="btn ghost" id="lt-reset-btn" type="button">الافتراضي</button>
+        </div>
       </div>
     </section>
 
@@ -351,6 +376,22 @@
       var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
       var auth = firebase.auth(app);
       var db = firebase.database(app);
+
+      var ADMIN_DEFAULT_GIFTS = [
+        { id: "free_wave", e: "👋", gifUrl: "", n: "تحية مجانية", p: 0, isFree: true, isEvent: false, active: true, cat: "free", vipMin: 0 },
+        { id: "heart", e: "❤️", gifUrl: "", n: "قلب", p: 10, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "rose", e: "🌹", gifUrl: "", n: "وردة", p: 25, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "crown", e: "👑", gifUrl: "", n: "تاج", p: 150, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "car", e: "🏎️", gifUrl: "", n: "سيارة", p: 300, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "rocket", e: "🚀", gifUrl: "", n: "صاروخ", p: 500, isFree: false, isEvent: true, active: true, cat: "events", vipMin: 1 },
+        { id: "diamond", e: "💎", gifUrl: "", n: "ألماس", p: 800, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 1 },
+        { id: "vip", e: "🦁", gifUrl: "", n: "أسد VIP", p: 1500, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 2 },
+        { id: "castle", e: "🏰", gifUrl: "", n: "قصر متحرك", p: 3000, isFree: false, isEvent: true, active: true, cat: "events", vipMin: 3 },
+        { id: "lucky_treats", e: "🍬", gifUrl: "", n: "حلويات الحظ", p: 100, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true },
+        { id: "lucky_star", e: "🌟", gifUrl: "", n: "نجمة الحظ", p: 50, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true },
+        { id: "lucky_clover", e: "🍀", gifUrl: "", n: "برسيم الحظ", p: 200, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true }
+      ];
+      var DEFAULT_LUCKY_TABLE = [{ m: 0, p: 86 }, { m: 2, p: 9 }, { m: 5, p: 3.5 }, { m: 10, p: 1.2 }, { m: 100, p: 0.28 }, { m: 500, p: 0.02 }];
 
       var state = {
         profiles: {},
@@ -449,6 +490,63 @@
         renderRewardsEditor();
       }
 
+      function findUserKey(q) {
+        q = String(q || "").trim().toLowerCase();
+        if (!q) return "";
+        var keys = Object.keys(state.profiles || {});
+        for (var i = 0; i < keys.length; i++) {
+          var u = state.profiles[keys[i]] || {};
+          if (keys[i].toLowerCase() === q || String(u.id || "").toLowerCase() === q || String(u.specialId || "").toLowerCase() === q) return keys[i];
+        }
+        for (var k = 0; k < keys.length; k++) {
+          if (String((state.profiles[keys[k]] || {}).name || "").toLowerCase() === q) return keys[k];
+        }
+        return "";
+      }
+      function grantCoins(uid, amount, note) {
+        amount = Math.trunc(Number(amount));
+        if (!uid || !isFinite(amount) || amount === 0) { toast("اكتب رقماً صحيحاً غير صفر"); return Promise.resolve(false); }
+        var applied = 0;
+        return db.ref("economy/wallets/" + uid + "/balance").transaction(function (cur) {
+          var c = Number(cur || 0), n = c + amount;
+          if (n < 0) n = 0; /* لا رصيد سالب */
+          applied = n - c;
+          return n;
+        }).then(function (res) {
+          if (!res.committed) { toast("تعذر تحديث المحفظة"); return false; }
+          var uName = (state.profiles[uid] && state.profiles[uid].name) || uid;
+          var adminName = (auth.currentUser && (auth.currentUser.displayName || auth.currentUser.email)) || "admin";
+          db.ref("economy/ledger/" + uid).push({
+            amount: applied, reason: "admin_grant", by: auth.currentUser ? auth.currentUser.uid : "",
+            title: note ? ("إدارة: " + note) : (applied >= 0 ? "منحة من الإدارة" : "خصم من الإدارة"),
+            createdAt: Date.now()
+          }).catch(function () { /* */ });
+          toast((applied >= 0 ? "تمت إضافة " : "تم خصم ") + Math.abs(applied).toLocaleString("en-US") + " 🪙 " + (applied >= 0 ? "إلى " : "من ") + uName + " ✅ (الرصيد الجديد: " + Number(res.snapshot.val() || 0).toLocaleString("en-US") + ")");
+          return true;
+        }).catch(function (e) { toast("فشل التنفيذ: " + (e && e.message ? e.message : "صلاحيات قاعدة البيانات")); return false; });
+      }
+
+      function ltToText(t) { return t.map(function (x) { return x.m + ":" + x.p; }).join("\n"); }
+      function ltParse() {
+        var rows = ($("lt-text").value || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+          var p = l.split(":"); return { m: Number(p[0]), p: Number(p[1]) };
+        });
+        var ok = rows.length > 0 && rows.every(function (x) { return isFinite(x.m) && x.m >= 0 && isFinite(x.p) && x.p > 0; });
+        var sum = rows.reduce(function (s, x) { return s + (x.p || 0); }, 0);
+        var rtp = rows.reduce(function (s, x) { return s + (x.m || 0) * (x.p || 0); }, 0);
+        return { rows: rows, ok: ok, sum: Math.round(sum * 1000) / 1000, rtp: rtp };
+      }
+      function ltRefreshStats() {
+        var r = ltParse();
+        $("lt-stats").textContent = "المجموع: " + r.sum + "% • متوسط العائد: " + r.rtp.toFixed(1) + "%" + ((r.ok && Math.abs(r.sum - 100) < 0.01) ? "" : " ⚠️");
+      }
+      function renderLuckyTableEditor() {
+        if (!$("lt-text") || document.activeElement === $("lt-text")) return;
+        var raw = state.settings && state.settings.luckyTable, arr = Array.isArray(raw) ? raw : (raw ? Object.keys(raw).map(function (k) { return raw[k]; }) : []);
+        $("lt-text").value = ltToText(arr.length ? arr : DEFAULT_LUCKY_TABLE);
+        ltRefreshStats();
+      }
+
       function renderAllAdmin() {
         var uKeys = Object.keys(state.profiles || {});
         var rKeys = Object.keys(state.rooms || {});
@@ -465,7 +563,7 @@
           if (!u) return false;
           if (!q) return true;
           return String(u.name || "").toLowerCase().indexOf(q) >= 0 || String(u.specialId || "").toLowerCase().indexOf(q) >= 0 || String(u.id || "").toLowerCase().indexOf(q) >= 0;
-        }).slice(0, 60);
+        }).slice(0, 120);
 
         $("adm-users-tbody").innerHTML = filteredUsers.map(function (u) {
           var w = state.wallets[u.id];
@@ -477,7 +575,7 @@
             '<td>VIP ' + Number(u.vip || 0) + '</td>' +
             '<td>' + (u.isAdmin ? '<span class="tag gold">مدير</span>' : '<span class="tag">عضو</span>') + '</td>' +
             '<td style="display:flex;gap:5px;flex-wrap:wrap">' +
-              '<button class="btn sm ok" data-add-coins="' + esc(u.id) + '" type="button">+100 🪙</button>' +
+              '<button class="btn sm ok" data-add-coins="' + esc(u.id) + '" type="button">💰 كوينزات</button>' +
               '<button class="btn sm gold" data-toggle-vip="' + esc(u.id) + '" type="button">VIP+1</button>' +
               '<button class="btn sm ghost" data-toggle-admin="' + esc(u.id) + '" type="button">' + (u.isAdmin ? 'إلغاء إدارة' : 'تعيين مدير') + '</button>' +
             '</td>' +
@@ -487,8 +585,9 @@
         $("adm-users-tbody").querySelectorAll("[data-add-coins]").forEach(function (b) {
           b.onclick = function () {
             var uid = b.getAttribute("data-add-coins");
-            db.ref("economy/wallets/" + uid + "/balance").transaction(function (c) { return Number(c || 0) + 100; });
-            toast("تمت إضافة 100 عملة ✅");
+            var v = prompt("كم كوينز تريد إضافته؟ (رقم سالب للخصم)", "1000");
+            if (v === null) return;
+            grantCoins(uid, Number(v), "");
           };
         });
         $("adm-users-tbody").querySelectorAll("[data-toggle-vip]").forEach(function (b) {
@@ -609,6 +708,7 @@
         $("st-gifts-on").checked = st.giftsEnabled !== false;
         $("st-lucky-on").checked = st.luckyGiftsEnabled !== false;
         $("st-create-room").checked = st.allowCreateRoom !== false;
+        renderLuckyTableEditor();
       }
 
       function startAdminListeners(user) {
@@ -682,6 +782,27 @@
       });
 
       $("adm-user-search").oninput = renderAllAdmin;
+      $("lt-text").oninput = ltRefreshStats;
+      $("lt-reset-btn").onclick = function () { $("lt-text").value = ltToText(DEFAULT_LUCKY_TABLE); ltRefreshStats(); };
+      $("lt-save-btn").onclick = function () {
+        var r = ltParse();
+        if (!r.ok) { toast("صيغة غير صحيحة — استخدم مضاعف:نسبة في كل سطر"); return; }
+        if (Math.abs(r.sum - 100) > 0.01) { toast("مجموع النسب لازم يساوي 100% (الحالي " + r.sum + "%)"); return; }
+        if (r.rtp > 100 && !confirm("متوسط العائد " + r.rtp.toFixed(1) + "% أعلى من 100% — يعني التطبيق يخسر على المدى الطويل. هل تريد المتابعة؟")) return;
+        db.ref("app_settings/luckyTable").set(r.rows).then(function () { toast("تم حفظ جدول الحظ ✅"); }).catch(function () { toast("تعذر الحفظ"); });
+      };
+
+      $("cg-user").oninput = function () {
+        var k = findUserKey(this.value);
+        $("cg-preview").textContent = k ? ("✔ " + ((state.profiles[k] && state.profiles[k].name) || k) + " — الرصيد الحالي: " + Number((state.wallets[k] && state.wallets[k].balance) != null ? state.wallets[k].balance : (state.wallets[k] || 0)).toLocaleString("en-US")) : (this.value ? "✖ لم يتم العثور على المستخدم" : "");
+      };
+      $("cg-send-btn").onclick = function () {
+        var btn = this, k = findUserKey($("cg-user").value);
+        if (!k) { toast("المستخدم غير موجود — تأكد من الـ ID أو الاسم"); return; }
+        var amt = Number($("cg-amount").value);
+        btn.disabled = true;
+        grantCoins(k, amt, ($("cg-note").value || "").trim()).then(function () { btn.disabled = false; });
+      };
 
       $("gf-save-btn").onclick = function () {
         var id = ($("gf-id").value || "").trim() || ("gift_" + Date.now().toString(36));
@@ -696,7 +817,11 @@
         var active = !!$("gf-active").checked;
         if (!name) { toast("اكتب اسم الهدية"); return; }
 
-        var obj = { id: id, n: name, e: emoji, gifUrl: gifUrl, p: price, cat: cat, vipMin: vipMin, isFree: isFree, isEvent: isEvent, active: active };
+        var isLucky = !!$("gf-lucky").checked;
+        if (isLucky && price <= 0) { toast("هدية الحظ لازم يكون لها سعر أكبر من صفر"); return; }
+        var obj = { id: id, n: name, e: emoji, gifUrl: gifUrl, p: price, cat: isLucky ? "lucky" : cat, vipMin: vipMin, isFree: isFree, isEvent: isEvent, active: active, lucky: isLucky };
+        /* حماية: لو القائمة فاضية نبدأ بالهدايا الافتراضية بدل ما نمسحها */
+        if (!state.gifts.length) state.gifts = ADMIN_DEFAULT_GIFTS.map(function (g) { return Object.assign({}, g); });
         var idx = state.gifts.findIndex(function (x) { return x.id === id; });
         if (idx >= 0) state.gifts[idx] = obj;
         else state.gifts.push(obj);
@@ -706,7 +831,7 @@
       $("gf-reset-btn").onclick = function () {
         $("gf-id").value = ""; $("gf-name").value = ""; $("gf-emoji").value = ""; $("gf-url").value = "";
         $("gf-price").value = "50"; $("gf-cat").value = "popular"; $("gf-vip").value = "0";
-        $("gf-free").checked = false; $("gf-event").checked = false; $("gf-active").checked = true;
+        $("gf-free").checked = false; $("gf-event").checked = false; $("gf-active").checked = true; $("gf-lucky").checked = false;
       };
 
       $("lb-select").onchange = function () { selectLuckyBox(this.value); };
