@@ -1239,6 +1239,18 @@
       uRef.update({ online: true }).catch(function () { /* */ });
     } catch (e) { /* */ }
 
+    // Server-managed gift catalog. Existing defaults remain available until Firebase responds.
+    onDb("app", cloud.db.ref("gifts"), "value", function (giftSnap) {
+      var rawGifts = giftSnap.val() || {};
+      var remoteGifts = Object.keys(rawGifts).map(function (key) {
+        var g = rawGifts[key] || {};
+        return { id: String(g.id || key), e: String(g.e || g.emoji || "🎁"), n: String(g.n || g.name || "هدية"),
+          p: Math.max(0, Number(g.p != null ? g.p : g.price || 0)), vipMin: Math.max(0, Number(g.vipMin || 0)),
+          image: String(g.image || ""), active: g.active !== false, category: String(g.category || "عام") };
+      }).filter(function (g) { return g.active; });
+      if (S) { S.customGifts = remoteGifts; saveLocal(); if (UI.roomId) renderRoom(); }
+    });
+
     onDb("app", cloud.db.ref("publicProfiles"), "value", function (ps) {
       var val = ps.val() || {};
       cloud.usersMap = val;
@@ -3096,6 +3108,38 @@
     $("sheet").querySelectorAll("[data-s]").forEach(function (el) { el.onclick = function () { closeSheet(); onPick(el.getAttribute("data-s")); }; });
   }
 
+  async function openLuckyGiftsSheet() {
+    if (UI.isGuest || !cloud.on || !cloud.db || !cloud.auth || !cloud.auth.currentUser) { toast("هدايا الحظ متاحة للحسابات المسجلة فقط"); return; }
+    var box = $("sheet");
+    openSheet("<h3>🎲 هدايا الحظ</h3><div class='notice'>افتح صندوقاً واربح جائزة عشوائية حسب الاحتمالات المحددة من الإدارة.</div><div id='lucky-box-list' class='list'><div class='empty'>جاري تحميل الصناديق...</div></div><button class='btn ghost block' id='lucky-back' type='button'>العودة للهدايا</button>");
+    var list = $("lucky-box-list");
+    try {
+      var snap = await cloud.db.ref("luckyBoxes").once("value"), data = snap.val() || {};
+      var boxes = Object.keys(data).map(function (id) { return Object.assign({ id: id }, data[id] || {}); }).filter(function (b) { return b.active !== false; });
+      list.innerHTML = boxes.length ? boxes.map(function (b) { return '<div class="row"><div><div class="name">' + esc(b.emoji || "🎁") + ' ' + esc(b.name || "صندوق الحظ") + '</div><div class="meta">السعر: ' + Math.max(0, Number(b.price || 0)) + ' 🪙</div></div><button class="btn sm gold" data-lucky-open="' + esc(b.id) + '" type="button">فتح الصندوق</button></div>'; }).join("") : '<div class="empty">لا توجد صناديق حظ متاحة حالياً</div>';
+      list.querySelectorAll("[data-lucky-open]").forEach(function (btn) {
+        btn.onclick = async function () {
+          if (btn.disabled) return;
+          var boxId = btn.getAttribute("data-lucky-open");
+          if (!confirm("هل تريد فتح صندوق الحظ وخصم سعره من رصيدك؟")) return;
+          btn.disabled = true; btn.textContent = "جارٍ الفتح...";
+          try {
+            var token = await cloud.auth.currentUser.getIdToken(true);
+            var resp = await fetch("https://us-central1-real-voice-aec71.cloudfunctions.net/luckyDraw", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify({ boxId: boxId, requestId: "ld_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10) }) });
+            var result = await resp.json();
+            if (!resp.ok || !result.ok) throw new Error(result.error || "تعذر فتح الصندوق");
+            if (result.balance != null) S.me.coins = Math.max(0, Number(result.balance));
+            save(); renderTop(); closeSheet();
+            toast("🎉 ربحت " + (result.reward && result.reward.name || "جائزة") + "!");
+            openSheet("<h3>🎉 مبروك! ربحت</h3><div class='rv-wallet-sheet'><div class='rv-wallet-coin'>" + esc(result.reward && (result.reward.emoji || result.reward.icon) || "🎁") + "</div><div class='rv-wallet-label'>جائزتك</div><strong style='font-size:22px'>" + esc(result.reward && result.reward.name || "جائزة") + "</strong><div class='meta'>رصيدك الحالي: " + Number(result.balance || 0).toLocaleString("en-US") + " 🪙</div></div><button class='btn block' id='lucky-result-close' type='button'>حسناً</button>");
+            if ($("lucky-result-close")) $("lucky-result-close").onclick = closeSheet;
+          } catch (err) { toast(err.message || "حدث خطأ أثناء فتح الصندوق"); btn.disabled = false; btn.textContent = "فتح الصندوق"; }
+        };
+      });
+    } catch (err) { list.innerHTML = '<div class="empty">تعذر تحميل صناديق الحظ</div>'; }
+    if ($("lucky-back")) $("lucky-back").onclick = function () { closeSheet(); openGiftSheet(); };
+  }
+
   function openGiftSheet(preselectedTargetId) {
     var r = getRoom(UI.roomId || UI.floatingRoomId), targets = [];
     if (r) {
@@ -3122,7 +3166,10 @@
     if (!gifts.some(function (g) { return g.id === UI.giftSel; })) UI.giftSel = gifts[0].id;
 
     var coinBal = Math.max(0, Number(S && S.me && S.me.coins || 0));
-    openSheet("<h3>🎁 إرسال هدية</h3><div class='rv-gift-wallet'>رصيدك الحالي: <b id='gift-sheet-coins'>" + coinBal.toLocaleString("en-US") + "</b> 🪙</div><label>اختر المستلم</label><div class='gift-targets-bar'>" + targets.map(function (t) { var tu = resolveLiveUser(t.id); return '<button class="gt-photo ' + (t.id === UI.giftTarget ? "sel" : "") + '" data-gt="' + esc(t.id) + '" type="button">' + avatarHTML(tu, "sm") + '<span>' + esc(tu.name || t.label) + '</span></button>'; }).join("") + "</div><label>اختر الهدية</label><div class='giftgrid'>" + gifts.map(function (g) { var price = Number(g.p != null ? g.p : (GIFT_COIN_PRICES[g.id] || 10)); return '<div class="gift ' + (g.id === UI.giftSel ? "sel" : "") + '" data-g="' + esc(g.id) + '"><div class="e">' + g.e + "</div><small>" + esc(g.n) + '</small><span class="p">' + price + " 🪙</span></div>"; }).join("") + "</div><button class='btn gold block' id='send-gift-go' type='button'>إرسال الهدية الآن 🎁</button>");
+    openSheet("<h3>🎁 إرسال هدية</h3><button class='btn gold block' id='open-lucky-gifts' type='button' style='margin:8px 0 12px'>🎲 افتح هدايا الحظ</button><div class='rv-gift-wallet'>رصيدك الحالي: <b id='gift-sheet-coins'>" + coinBal.toLocaleString("en-US") + "</b> 🪙</div><label>اختر المستلم</label><div class='gift-targets-bar'>" + targets.map(function (t) { var tu = resolveLiveUser(t.id); return '<button class="gt-photo ' + (t.id === UI.giftTarget ? "sel" : "") + '" data-gt="' + esc(t.id) + '" type="button">' + avatarHTML(tu, "sm") + '<span>' + esc(tu.name || t.label) + '</span></button>'; }).join("") + "</div><label>اختر الهدية</label><div class='giftgrid'>" + gifts.map(function (g) { var price = Number(g.p != null ? g.p : (GIFT_COIN_PRICES[g.id] || 10)); return '<div class="gift ' + (g.id === UI.giftSel ? "sel" : "") + '" data-g="' + esc(g.id) + '"><div class="e">' + g.e + "</div><small>" + esc(g.n) + '</small><span class="p">' + price + " 🪙</span></div>"; }).join("") + "</div><button class='btn gold block' id='send-gift-go' type='button'>إرسال الهدية الآن 🎁</button>");
+
+    var luckyBtn = $("open-lucky-gifts");
+    if (luckyBtn) luckyBtn.onclick = openLuckyGiftsSheet;
 
     $("sheet").querySelectorAll("[data-gt]").forEach(function (el) {
       el.onclick = function () {
