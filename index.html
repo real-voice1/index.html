@@ -8,8 +8,8 @@
   <style>
     :root {
       --bg: #0b0d17;
-      --panel: rgba(20, 24, 42, 0.9);
-      --panel-2: rgba(30, 36, 62, 0.94);
+      --panel: rgba(20, 24, 42, 0.92);
+      --panel-2: rgba(30, 36, 62, 0.95);
       --line: rgba(255, 255, 255, 0.11);
       --text: #f5f7ff;
       --muted: #9aa4c7;
@@ -250,6 +250,8 @@
     .tag.vip { background: rgba(245, 158, 11, 0.22); color: #fbbf24; }
     .tag.verified { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
     .tag.rel { background: rgba(124, 58, 237, 0.2); color: #c4b5fd; }
+    .tag.free { background: rgba(22, 163, 74, 0.22); color: #4ade80; }
+    .tag.event { background: rgba(219, 39, 119, 0.22); color: #f9a8d4; }
     .vip-gold { color: #fbbf24; }
     .room-pill-tag {
       display: inline-block; margin-top: 4px; font-size: 11px; padding: 2px 8px;
@@ -482,7 +484,7 @@
     #scrim.open { opacity: 1; pointer-events: auto; }
     #sheet {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
-      max-height: 84vh; overflow-y: auto; background: var(--panel);
+      max-height: 86vh; overflow-y: auto; background: var(--panel);
       border-top: 1px solid var(--line); border-radius: 22px 22px 0 0;
       padding: 12px 16px 26px; transform: translateY(100%); transition: transform 0.24s ease;
       max-width: 760px; margin: 0 auto;
@@ -515,7 +517,6 @@
     .cup-podium-avatar .avatar{width:100%;height:100%;border:0}.cup-podium-name{font-size:12px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cup-podium-count{font-size:11px;color:var(--muted);margin-top:4px}
     .cup-list-title{font-weight:900;font-size:14px;margin:12px 2px}.cup-rank-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);background:var(--panel);border-radius:15px;margin-bottom:8px}
     .cup-rank-number{width:30px;text-align:center;font-weight:900;font-size:14px}.cup-rank-row .info{min-width:0;flex:1}.cup-rank-row .name{font-weight:800}.cup-rank-row .meta{font-size:11px;color:var(--muted);margin-top:3px}
-    @media(max-width:360px){.cup-podium{gap:5px}.cup-podium-card{padding-left:3px;padding-right:3px}.cup-podium-avatar{width:46px;height:46px}}
 
     #page-profile { padding-bottom: 16px; }
     #page-profile .pf-hero { overflow: hidden; border-radius: 20px; }
@@ -543,13 +544,37 @@
 
     .giftgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px; }
     .gift {
+      position: relative;
       background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
       padding: 8px 4px; text-align: center; cursor: pointer;
     }
     .gift.sel { border-color: var(--gold); background: rgba(245, 158, 11, 0.14); }
-    .gift .e { font-size: 24px; }
-    .gift small { display: block; font-size: 11px; margin-top: 2px; }
+    .gift .e { font-size: 24px; height: 32px; display: grid; place-items: center; }
+    .gift .e img { width: 32px; height: 32px; object-fit: contain; border-radius: 6px; }
+    .gift small { display: block; font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .gift .p { display: block; font-size: 10.5px; color: var(--gold); margin-top: 2px; font-weight: 700; }
+    .gift .p.free { color: #4ade80; }
+
+    .lucky-box-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.16), rgba(245, 158, 11, 0.14));
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .lucky-reveal-box {
+      background: radial-gradient(circle at top, rgba(245, 158, 11, 0.25), var(--panel-2));
+      border: 1px solid var(--gold);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      margin: 10px 0;
+      animation: popReveal 0.35s ease;
+    }
+    @keyframes popReveal {
+      0% { transform: scale(0.82); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
 
     .emojigrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
     .emojigrid button {
@@ -611,7 +636,7 @@
 <body>
   <div id="splash-screen">
     <div class="splash-logo">🎙️</div>
-    <div style="font-weight:800;font-size:18px">REAL VOICE</div>
+    <div style="font-weight:800;font-size:18px" class="app-brand-label">REAL VOICE</div>
     <div style="font-size:12.5px;color:var(--muted)">جاري التحميل...</div>
   </div>
   <script>
@@ -637,8 +662,8 @@
     <div class="auth-card">
       <div id="auth-step-login">
         <div class="splash-logo" style="margin:0 auto 12px">🎙️</div>
-        <h2 class="auth-title">أهلاً بك في REAL VOICE</h2>
-        <p class="auth-sub">سجّل الدخول بحساب Google أو ابدأ كزائر وادخل إلى الغرف الصوتية.</p>
+        <h2 class="auth-title">أهلاً بك في <span class="app-brand-label">REAL VOICE</span></h2>
+        <p class="auth-sub" id="auth-welcome-sub">سجّل الدخول بحساب Google أو ابدأ كزائر وادخل إلى الغرف الصوتية.</p>
         <div id="auth-error-box" class="auth-error hidden"></div>
         <button class="btn block" id="google-login-btn" type="button" style="margin-bottom:10px">تسجيل الدخول بحساب Google</button>
         <button class="btn ghost block" id="guest-login-btn" type="button">الدخول كزائر</button>
@@ -670,7 +695,7 @@
 
   <div id="app">
     <div id="install-app-bar" class="install-bar hidden">
-      <span>📲 ثبّت تطبيق <b>REAL VOICE</b> على جهازك للوصول السريع</span>
+      <span>📲 ثبّت تطبيق <b class="app-brand-label">REAL VOICE</b> على جهازك للوصول السريع</span>
       <button class="btn sm" id="install-app-btn" type="button">تثبيت</button>
     </div>
 
@@ -683,7 +708,7 @@
       <div class="brand-wrap">
         <div id="avatar-top" class="avatar sm" title="الملف الشخصي">RV</div>
         <div>
-          <div class="brand-name">REAL VOICE</div>
+          <div class="brand-name app-brand-label">REAL VOICE</div>
         </div>
         <span id="session-mode-pill" class="mode-pill">Google</span>
       </div>
@@ -786,7 +811,7 @@
         </div>
       </div>
 
-      <button id="pf-wallet-open" class="rv-profile-wallet" type="button"><span class="rv-wallet-icon">🪙</span><span class="rv-wallet-copy"><b>محفظة REAL VOICE</b><small>رصيد العملات المتاح للهدايا</small></span><strong id="pf-wallet-coins">0</strong><span class="rv-wallet-arrow">‹</span></button>
+      <button id="pf-wallet-open" class="rv-profile-wallet" type="button"><span class="rv-wallet-icon">🪙</span><span class="rv-wallet-copy"><b>محفظة <span class="app-brand-label">REAL VOICE</span></b><small>رصيد العملات المتاح للهدايا وصناديق الحظ</small></span><strong id="pf-wallet-coins">0</strong><span class="rv-wallet-arrow">‹</span></button>
 
       <div class="stats-grid">
         <div class="stat-box" id="pf-stat-followers-btn">
@@ -812,6 +837,10 @@
           <b id="pf-charm-level">Lv.1 (0)</b>
           <span>الجاذبية</span>
         </div>
+        <div class="stat-box" id="pf-lucky-history-btn">
+          <b id="pf-lucky-wins-count">0</b>
+          <span>جوائز الحظ</span>
+        </div>
       </div>
 
       <div id="profile-subtabs" class="tabs">
@@ -823,12 +852,13 @@
 
       <div id="pf-tab-overview">
         <div class="profile-gift-intro glass" style="padding:12px;border-radius:14px;margin-bottom:12px">
-          <b>🎁 معرض الهدايا</b>
-          <div class="meta">معرض مختصر للهدايا التي استلمها هذا الحساب.</div>
+          <b>🎁 معرض الهدايا والجوائز</b>
+          <div class="meta">معرض الهدايا الثابتة المستلمة والجوائز الخاصة بحسابك.</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">
             <button class="btn sm ghost" id="pf-blocked-btn" type="button">🚫 المحظورون (<span id="pf-blocked-count">0</span>)</button>
             <button class="btn sm gold hidden" id="pf-admin-btn" type="button">🛡️ الإدارة</button>
           </div>
+          <div id="pf-perks-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
         </div>
         <div class="sec-head">
           <h3 class="sec-title">🎁 الهدايا المستلمة</h3>
@@ -930,7 +960,7 @@
       <button class="icon-btn" id="room-photo-btn" title="إرسال صورة" type="button">📷</button>
       <button class="icon-btn" id="room-music" title="الموسيقى" type="button">🎵</button>
       <button class="rv-room-wallet" id="room-wallet-open" type="button" title="المحفظة">🪙 <b id="room-wallet-balance">0</b></button>
-      <button class="icon-btn" id="room-gift" title="هدايا" type="button">🎁</button>
+      <button class="icon-btn" id="room-gift" title="هدايا ثابتة وحظ" type="button">🎁</button>
       <button class="btn sm" id="room-send" type="button">إرسال</button>
     </div>
 
