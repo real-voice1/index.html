@@ -325,10 +325,6 @@
     .stat-box b { display: block; font-size: 15px; }
     .stat-box span { font-size: 11.5px; color: var(--muted); }
 
-      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 12px; margin-bottom: 12px;
-    }
-
     .gift-showcase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .gift-showcase-item {
       position: relative; background: var(--panel); border: 1px solid var(--line);
@@ -506,8 +502,6 @@
     }
     .actlist button.danger { color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
 
-
-
     /* Full-screen Gift Cup page */
     #gift-cup-page{position:fixed;inset:0;z-index:120;background:var(--bg);display:none;flex-direction:column;overflow:hidden}
     #gift-cup-page.open{display:flex}
@@ -617,7 +611,6 @@
     .rv-room-wallet{display:flex;align-items:center;gap:5px;padding:7px 10px;border-radius:22px;background:linear-gradient(120deg,#5b3b12,#d99b22);border:1px solid #ffd66b;color:#fff;font-size:13px;white-space:nowrap}
     .rv-room-wallet b{direction:ltr}.rv-gift-wallet{padding:10px;border-radius:12px;background:rgba(245,158,11,.13);border:1px solid rgba(245,158,11,.28);margin:8px 0;color:var(--text)}
     .rv-wallet-sheet{padding:20px;border-radius:20px;text-align:center;background:linear-gradient(145deg,#38265d,#171a2e 65%,#6b4314);border:1px solid #d9a441;color:white}.rv-wallet-coin{font-size:38px}.rv-wallet-label{opacity:.8;font-size:13px}.rv-wallet-sheet strong{display:block;font-size:34px;color:#ffd66b;margin:6px 0;direction:ltr}
-
   </style>
 </head>
 <body>
@@ -652,9 +645,10 @@
       <div id="auth-step-login">
         <div class="splash-logo" style="margin:0 auto 12px">🎙️</div>
         <h2 class="auth-title">أهلاً بك في REAL VOICE</h2>
-        <p class="auth-sub">ابدأ مباشرة بدون حساب Google. أنشئ ملفك الشخصي وادخل إلى الغرف الصوتية.</p>
+        <p class="auth-sub">سجّل الدخول بحساب Google أو ابدأ كزائر وادخل إلى الغرف الصوتية.</p>
         <div id="auth-error-box" class="auth-error hidden"></div>
-<button class="btn ghost block" id="guest-login-btn" type="button">الدخول كزائر</button>
+        <button class="btn block" id="google-login-btn" type="button" style="margin-bottom:10px">تسجيل الدخول بحساب Google</button>
+        <button class="btn ghost block" id="guest-login-btn" type="button">الدخول كزائر</button>
       </div>
 
       <div id="auth-step-onboard" class="hidden">
