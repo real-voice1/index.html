@@ -1,47 +1,701 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>إدارة REAL VOICE</title>
-<style>
-:root{--bg:#090b13;--card:#141a2a;--card2:#1c2438;--line:#2b3550;--txt:#f4f6ff;--muted:#9ba8c7;--gold:#f4b942;--purple:#7957ef;--red:#d94c61;--green:#20a878}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#1b1740 0,transparent 34%),var(--bg);color:var(--txt);font-family:system-ui,Tahoma,Arial}button,input,textarea,select{font:inherit}.wrap{max-width:1200px;margin:auto;padding:16px}.hidden{display:none!important}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;margin-bottom:14px}.login{max-width:420px;margin:9vh auto;text-align:center}.logo{font-size:32px}.muted{color:var(--muted);font-size:13px}.btn{border:0;border-radius:11px;padding:10px 14px;color:#fff;background:var(--purple);font-weight:800;cursor:pointer}.btn.gold{background:var(--gold);color:#17120a}.btn.red{background:var(--red)}.btn.green{background:var(--green)}.btn.dark{background:var(--card2);border:1px solid var(--line)}.btn:disabled{opacity:.55}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:var(--card2);padding:13px;border-radius:13px;text-align:center}.stat b{display:block;font-size:23px;color:var(--gold)}.tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 12px}.tab{white-space:nowrap;background:var(--card2);border:1px solid var(--line);color:var(--muted);padding:9px 13px;border-radius:30px;cursor:pointer}.tab.active{background:var(--purple);color:white}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card2);padding:12px;border-radius:12px;margin:8px 0}.actions{display:flex;gap:7px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted)}input,textarea,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#0e1422;color:var(--txt)}textarea{min-height:110px;resize:vertical}.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.notice{background:#262044;border:1px solid #4c3b8a;padding:11px;border-radius:11px;font-size:13px;line-height:1.6;margin-bottom:12px}.status{padding:9px;border-radius:9px;margin:8px 0;font-size:13px}.status.ok{background:#123c32}.status.err{background:#4b202a}.list{max-height:65vh;overflow:auto}.pill{font-size:11px;border-radius:30px;background:#303a55;padding:3px 8px}.empty{text-align:center;padding:25px;color:var(--muted)}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.form,.grid{grid-template-columns:1fr}.wrap{padding:10px}.card{padding:12px}}
-</style></head><body><div id="login" class="wrap"><div class="card login"><div class="logo">🛡️</div><h2>لوحة تحكم REAL VOICE</h2><p class="muted">تسجيل دخول المدير المعتمد</p><div id="loginMsg" class="status err hidden"></div><button class="btn gold" id="loginBtn">تسجيل الدخول بحساب Google</button></div></div>
-<div id="denied" class="wrap hidden"><div class="card login"><h2>غير مصرح</h2><p class="muted">هذا الحساب لا يملك صلاحية المدير.</p><button class="btn dark" id="switchBtn">تغيير الحساب</button></div></div>
-<main id="app" class="wrap hidden"><header class="card top"><div><h2 style="margin:0">🛡️ REAL VOICE <span class="pill">ADMIN</span></h2><div id="adminLabel" class="muted"></div></div><div class="actions"><button class="btn dark" id="refresh">تحديث</button><button class="btn red" id="logout">خروج</button></div></header>
-<div class="stats card"><div class="stat"><b id="countUsers">0</b><span class="muted">المستخدمون</span></div><div class="stat"><b id="countRooms">0</b><span class="muted">الغرف</span></div><div class="stat"><b id="countGifts">0</b><span class="muted">الهدايا الثابتة</span></div><div class="stat"><b id="countBoxes">0</b><span class="muted">صناديق الحظ</span></div></div>
-<nav class="tabs" id="tabs"><button class="tab active" data-tab="users">👥 المستخدمون</button><button class="tab" data-tab="wallet">🪙 العملات</button><button class="tab" data-tab="gifts">🎁 الهدايا الثابتة</button><button class="tab" data-tab="lucky">🎲 هدايا الحظ</button><button class="tab" data-tab="rooms">🎙️ الغرف</button><button class="tab" data-tab="settings">⚙️ الإعدادات</button><button class="tab" data-tab="notice">📢 الإشعارات</button><button class="tab" data-tab="logs">📜 السجلات</button></nav>
-<section class="card pane" id="pane-users"><h3>إدارة المستخدمين</h3><input id="userSearch" placeholder="ابحث بالاسم أو UID أو ID"><div id="usersList" class="list"></div></section>
-<section class="card pane hidden" id="pane-wallet"><h3>إرسال عملات لمستخدم</h3><div class="notice">الإضافة تتم من خلال Cloud Function محمية، ولا يتم تعديل رصيد المحفظة من المتصفح.</div><div class="form"><div class="field"><label>UID أو رقم ID</label><input id="coinTarget" placeholder="UID أو ID المكون من 7 أرقام"></div><div class="field"><label>عدد العملات</label><input id="coinAmount" type="number" min="1" max="10000000" placeholder="مثال: 5000"></div><div class="field"><label>سبب الإضافة</label><input id="coinReason" value="هدية من إدارة REAL VOICE"></div></div><button class="btn gold" id="grantCoins">إرسال العملات</button><div id="walletStatus"></div></section>
-<section class="card pane hidden" id="pane-gifts"><h3>إدارة الهدايا الثابتة</h3><div class="form"><div class="field"><label>معرّف الهدية</label><input id="giftId" placeholder="مثال rose"></div><div class="field"><label>الإيموجي</label><input id="giftEmoji" placeholder="🌹"></div><div class="field"><label>اسم الهدية</label><input id="giftName" placeholder="وردة"></div><div class="field"><label>السعر بالعملات</label><input id="giftPrice" type="number" min="0" value="25"></div><div class="field"><label>رابط صورة أو GIF</label><input id="giftImage" placeholder="https://..."></div><div class="field"><label>أقل مستوى VIP</label><input id="giftVip" type="number" min="0" value="0"></div></div><button class="btn gold" id="saveGift">حفظ / إضافة الهدية</button><div id="giftsList" class="list"></div></section>
-<section class="card pane hidden" id="pane-lucky"><h3>إدارة صناديق الحظ</h3><div class="notice">أدخل الجوائز بصيغة JSON. مجموع weight لكل الجوائز النشطة يجب أن يساوي 100 بالضبط. type المدعوم حالياً: coins أو frame أو badge أو vip أو gift (تُحفظ العناصر غير النقدية في inventory).</div><div class="form"><div class="field"><label>معرّف الصندوق</label><input id="boxId" placeholder="basic_box"></div><div class="field"><label>اسم الصندوق</label><input id="boxName" placeholder="صندوق الحظ العادي"></div><div class="field"><label>الإيموجي</label><input id="boxEmoji" value="🎁"></div><div class="field"><label>السعر</label><input id="boxPrice" type="number" min="0" value="100"></div></div><div class="field"><label>الجوائز واحتمالاتها (JSON)</label><textarea id="boxRewards">[
- {"id":"coins_50","name":"50 عملة","type":"coins","value":50,"weight":60,"emoji":"🪙","active":true},
- {"id":"coins_250","name":"250 عملة","type":"coins","value":250,"weight":30,"emoji":"💎","active":true},
- {"id":"vip_badge","name":"شارة مميزة","type":"badge","value":1,"weight":10,"emoji":"👑","active":true}
-]</textarea></div><button class="btn gold" id="saveBox">حفظ / إضافة الصندوق</button><div id="luckyList" class="list"></div></section>
-<section class="card pane hidden" id="pane-rooms"><h3>إدارة الغرف</h3><div id="roomsList" class="list"></div></section>
-<section class="card pane hidden" id="pane-settings"><h3>إعدادات التطبيق</h3><div class="form"><div class="field"><label>اسم التطبيق</label><input id="appName" value="REAL VOICE"></div><div class="field"><label>إعلان أو تنبيه عام</label><input id="appNotice"></div><div class="field"><label>وضع الصيانة</label><select id="maintenance"><option value="false">متوقف</option><option value="true">مفعل</option></select></div></div><button class="btn gold" id="saveSettings">حفظ الإعدادات</button></section>
-<section class="card pane hidden" id="pane-notice"><h3>إرسال إشعار عام</h3><div class="field"><label>نص الإشعار</label><textarea id="noticeText" placeholder="اكتب الإعلان الذي سيظهر للمستخدمين"></textarea></div><button class="btn gold" id="sendNotice">إرسال للجميع</button><div id="noticeStatus"></div></section>
-<section class="card pane hidden" id="pane-logs"><h3>سجل عمليات المدير</h3><div id="logsList" class="list"></div></section></main><div id="toast" class="wrap"></div>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script>
-(function(){'use strict';
-const CFG={apiKey:'AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4',authDomain:'real-voice-aec71.firebaseapp.com',databaseURL:'https://real-voice-aec71-default-rtdb.firebaseio.com',projectId:'real-voice-aec71',storageBucket:'real-voice-aec71.firebasestorage.app',messagingSenderId:'1051527775983',appId:'1:1051527775983:web:ae3794c162184fd56b7d1a'};
-const ADMIN_UID='MDdaKOJ4CLNrwRizr2jZUbHfGDb2', GRANT_URL='https://us-central1-real-voice-aec71.cloudfunctions.net/adminGrantCoins';
-const app=firebase.apps.length?firebase.app():firebase.initializeApp(CFG),auth=firebase.auth(app),db=firebase.database(app);let me=null,data={users:{},profiles:{},rooms:{},gifts:{},boxes:{},logs:{}};
-const $=id=>document.getElementById(id), esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function status(id,msg,ok){const el=$(id);if(el){el.className='status '+(ok?'ok':'err');el.textContent=msg;}}
-function log(action,details){const ref=db.ref('adminLogs').push();return ref.set({action,details,adminUid:me.uid,adminEmail:me.email||'',createdAt:firebase.database.ServerValue.TIMESTAMP});}
-async function load(){const keys=['users','publicProfiles','rooms','gifts','luckyBoxes','adminLogs'];const s=await Promise.all(keys.map(k=>db.ref(k).once('value')));data={users:s[0].val()||{},profiles:s[1].val()||{},rooms:s[2].val()||{},gifts:s[3].val()||{},boxes:s[4].val()||{},logs:s[5].val()||{}};$('countUsers').textContent=Object.keys(data.profiles).length;$('countRooms').textContent=Object.keys(data.rooms).length;$('countGifts').textContent=Object.keys(data.gifts).length;$('countBoxes').textContent=Object.keys(data.boxes).length;renderUsers();renderGifts();renderBoxes();renderRooms();renderLogs();const cfg=(await db.ref('appSettings').once('value')).val()||{};$('appName').value=cfg.appName||'REAL VOICE';$('appNotice').value=cfg.notice||'';$('maintenance').value=String(!!cfg.maintenance);}
-function allUsers(){const ids=new Set([...Object.keys(data.users),...Object.keys(data.profiles)]);return [...ids].map(uid=>({uid,...(data.users[uid]||{}),...(data.profiles[uid]||{})}));}
-function renderUsers(){const q=($('userSearch').value||'').toLowerCase().trim();const rows=allUsers().filter(u=>[u.uid,u.name,u.specialId,u.email].some(x=>String(x||'').toLowerCase().includes(q))).slice(0,150);$('usersList').innerHTML=rows.length?rows.map(u=>`<div class="row"><div><b>${esc(u.name||'مستخدم')}</b> <span class="pill">ID ${esc(u.specialId||'—')}</span><div class="muted">${esc(u.uid)} • رصيد ${Number((u.coins||((data.users[u.uid]||{}).coins)||0))}</div></div><div class="actions"><button class="btn ${u.banned?'green':'red'}" data-ban="${esc(u.uid)}">${u.banned?'فك الحظر':'حظر'}</button><button class="btn dark" data-vip="${esc(u.uid)}">VIP</button><button class="btn dark" data-verify="${esc(u.uid)}">${u.verified?'إلغاء التوثيق':'توثيق'}</button></div></div>`).join(''):'<div class="empty">لا يوجد مستخدمون</div>';}
-function renderGifts(){$('giftsList').innerHTML=Object.keys(data.gifts).map(id=>{const g=data.gifts[id]||{};return `<div class="row"><div><b>${esc(g.e||'🎁')} ${esc(g.n||id)}</b><div class="muted">${Number(g.p||0)} 🪙 • ${g.active===false?'متوقفة':'مفعلة'} • ${esc(id)}</div></div><div class="actions"><button class="btn dark" data-editgift="${esc(id)}">تعديل</button><button class="btn red" data-delgift="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد هدايا</div>';}
-function renderBoxes(){$('luckyList').innerHTML=Object.keys(data.boxes).map(id=>{const b=data.boxes[id]||{};const rr=Array.isArray(b.rewards)?b.rewards:Object.values(b.rewards||{});return `<div class="row"><div><b>${esc(b.emoji||'🎁')} ${esc(b.name||id)}</b><div class="muted">${Number(b.price||0)} 🪙 • ${rr.length} جوائز • ${b.active===false?'متوقف':'مفعل'}</div></div><div class="actions"><button class="btn dark" data-editbox="${esc(id)}">تعديل</button><button class="btn red" data-delbox="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد صناديق حظ</div>';}
-function renderRooms(){$('roomsList').innerHTML=Object.keys(data.rooms).map(id=>{const r=data.rooms[id]||{};return `<div class="row"><div><b>${esc(r.name||'غرفة')}</b><div class="muted">${esc(id)} • ${r.locked?'مقفلة':'مفتوحة'}</div></div><div class="actions"><button class="btn dark" data-lock="${esc(id)}">${r.locked?'فتح':'قفل'}</button><button class="btn red" data-delroom="${esc(id)}">حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد غرف</div>';}
-function renderLogs(){const rows=Object.entries(data.logs).map(([id,x])=>({id,...x})).sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0)).slice(0,100);$('logsList').innerHTML=rows.map(x=>`<div class="row"><div><b>${esc(x.action||'عملية')}</b><div class="muted">${esc(x.details||'')} • ${esc(x.adminEmail||x.adminUid||'')}</div></div><span class="pill">${x.createdAt?new Date(x.createdAt).toLocaleString('ar-EG'):''}</span></div>`).join('')||'<div class="empty">لا توجد عمليات مسجلة</div>';}
-$('loginBtn').onclick=async()=>{try{const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});await auth.signInWithPopup(p);}catch(e){status('loginMsg',e.message||'فشل تسجيل الدخول');}};$('switchBtn').onclick=()=>auth.signOut();$('logout').onclick=()=>auth.signOut();$('refresh').onclick=()=>load().catch(e=>alert(e.message));$('userSearch').oninput=renderUsers;
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.pane').forEach(x=>x.classList.toggle('hidden',x.id!=='pane-'+b.dataset.tab));});
-$('grantCoins').onclick=async()=>{const targetUid=$('coinTarget').value.trim(),amount=Number($('coinAmount').value),reason=$('coinReason').value.trim();if(!targetUid||!Number.isSafeInteger(amount)||amount<1){status('walletStatus','أدخل UID/ID وعدداً صحيحاً موجباً.',false);return;}try{const token=await auth.currentUser.getIdToken(true);const res=await fetch(GRANT_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({targetId:targetUid,amount,reason})});const v=await res.json();if(!res.ok||!v.ok)throw new Error(v.error||'فشل إرسال العملات');status('walletStatus',`تمت إضافة ${v.added} عملة. الرصيد الجديد: ${v.balance}`,true);await log('grant_coins',`${v.targetUid}: +${v.added} — ${reason}`);await load();}catch(e){status('walletStatus',e.message||'تعذر الاتصال بخدمة العملات',false);}};
-$('saveGift').onclick=async()=>{const id=$('giftId').value.trim().replace(/[^A-Za-z0-9_-]/g,'_'),e=$('giftEmoji').value.trim()||'🎁',n=$('giftName').value.trim(),p=Number($('giftPrice').value);if(!id||!n||!Number.isSafeInteger(p)||p<0){alert('راجع معرّف الهدية والاسم والسعر');return;}const v={id,e,n,p,vipMin:Math.max(0,Number($('giftVip').value||0)),image:$('giftImage').value.trim(),active:true};await db.ref('gifts/'+id).set(v);await log('save_gift',id);await load();};
-$('saveBox').onclick=async()=>{const id=$('boxId').value.trim().replace(/[^A-Za-z0-9_-]/g,'_'),name=$('boxName').value.trim(),price=Number($('boxPrice').value);let rewards;try{rewards=JSON.parse($('boxRewards').value);}catch(e){alert('JSON الجوائز غير صحيح');return;}const sum=rewards.filter(r=>r.active!==false).reduce((s,r)=>s+Number(r.weight||0),0);if(!id||!name||!Number.isSafeInteger(price)||price<0||Math.abs(sum-100)>0.000001){alert('تأكد من البيانات وأن مجموع الاحتمالات النشطة = 100%');return;}if(!Array.isArray(rewards)||!rewards.length){alert('أدخل قائمة جوائز');return;}await db.ref('luckyBoxes/'+id).set({id,name,emoji:$('boxEmoji').value.trim()||'🎁',price,rewards,active:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});await log('save_lucky_box',id);await load();};
-$('saveSettings').onclick=async()=>{await db.ref('appSettings').update({appName:$('appName').value.trim()||'REAL VOICE',notice:$('appNotice').value.trim(),maintenance:$('maintenance').value==='true',updatedAt:firebase.database.ServerValue.TIMESTAMP});await log('update_settings','appSettings');alert('تم حفظ الإعدادات');};
-$('sendNotice').onclick=async()=>{const message=$('noticeText').value.trim();if(!message)return alert('اكتب نص الإشعار');const ref=db.ref('announcements').push();await ref.set({message,createdAt:firebase.database.ServerValue.TIMESTAMP,by:me.uid,active:true});await log('announcement',message);status('noticeStatus','تم نشر الإعلان في قاعدة البيانات. يجب أن تكون واجهة التطبيق مهيأة لقراءة announcements.',true);};
-document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{if(b.dataset.ban){const uid=b.dataset.ban,val=!(data.users[uid]||{}).banned;await db.ref().update({['users/'+uid+'/banned']:val,['publicProfiles/'+uid+'/banned']:val});await log('ban_user',uid+' '+val);}else if(b.dataset.verify){const uid=b.dataset.verify,val=!(data.users[uid]||{}).verified;await db.ref().update({['users/'+uid+'/verified']:val,['publicProfiles/'+uid+'/verified']:val});await log('verify_user',uid+' '+val);}else if(b.dataset.vip){const uid=b.dataset.vip,lv=prompt('مستوى VIP (0-10)','1');if(lv===null)return;const n=Math.max(0,Math.min(10,Number(lv)||0));await db.ref().update({['users/'+uid+'/vip']:n,['publicProfiles/'+uid+'/vip']:n});await log('set_vip',uid+' '+n);}else if(b.dataset.editgift){const g=data.gifts[b.dataset.editgift]||{};$('giftId').value=b.dataset.editgift;$('giftEmoji').value=g.e||'';$('giftName').value=g.n||'';$('giftPrice').value=g.p||0;$('giftImage').value=g.image||'';$('giftVip').value=g.vipMin||0;}else if(b.dataset.delgift){if(!confirm('حذف الهدية؟'))return;await db.ref('gifts/'+b.dataset.delgift).remove();await log('delete_gift',b.dataset.delgift);}else if(b.dataset.editbox){const id=b.dataset.editbox,x=data.boxes[id]||{};$('boxId').value=id;$('boxName').value=x.name||'';$('boxEmoji').value=x.emoji||'🎁';$('boxPrice').value=x.price||0;$('boxRewards').value=JSON.stringify(x.rewards||[],null,2);}else if(b.dataset.delbox){if(!confirm('حذف صندوق الحظ؟'))return;await db.ref('luckyBoxes/'+b.dataset.delbox).remove();await log('delete_lucky_box',b.dataset.delbox);}else if(b.dataset.lock){const id=b.dataset.lock,val=!(data.rooms[id]||{}).locked;await db.ref('rooms/'+id+'/locked').set(val);await log('room_lock',id+' '+val);}else if(b.dataset.delroom){if(!confirm('حذف الغرفة؟'))return;await db.ref('rooms/'+b.dataset.delroom).remove();await log('delete_room',b.dataset.delroom);}await load();}catch(err){alert(err.message||'حدث خطأ');}});
-auth.onAuthStateChanged(async user=>{me=user;if(!user){$('login').classList.remove('hidden');$('denied').classList.add('hidden');$('app').classList.add('hidden');return;}try{const s=await db.ref('users/'+user.uid+'/isAdmin').once('value');if(user.uid!==ADMIN_UID||s.val()!==true){$('login').classList.add('hidden');$('app').classList.add('hidden');$('denied').classList.remove('hidden');return;}$('login').classList.add('hidden');$('denied').classList.add('hidden');$('app').classList.remove('hidden');$('adminLabel').textContent=user.email||user.uid;await load();}catch(e){$('login').classList.add('hidden');$('denied').classList.remove('hidden');}});
-})();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REAL VOICE — لوحة التحكم الإدارية</title>
+  <style>
+    :root {
+      --bg: #080a12;
+      --card: #121626;
+      --card-2: #181e34;
+      --line: rgba(245, 158, 11, 0.22);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --gold: #f59e0b;
+      --gold-2: #fbbf24;
+      --purple: #7c3aed;
+      --ok: #16a34a;
+      --red: #dc2626;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #1e1538, var(--bg) 65%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+      min-height: 100vh;
+    }
+    .hidden { display: none !important; }
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 18px; background: rgba(12, 15, 28, 0.94);
+      backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 17px; color: var(--gold-2); }
+    .layout { display: grid; grid-template-columns: 245px minmax(0, 1fr); min-height: calc(100vh - 58px); }
+    .sidebar {
+      background: var(--card); border-left: 1px solid var(--line); padding: 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .nav-item {
+      width: 100%; text-align: right; padding: 10px 12px; border-radius: 12px;
+      border: 1px solid transparent; background: transparent; color: var(--text);
+      cursor: pointer; font-weight: 700; font-size: 13px;
+    }
+    .nav-item:hover { background: var(--card-2); }
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(124, 58, 237, 0.25));
+      border-color: rgba(245, 158, 11, 0.55); color: var(--gold-2);
+    }
+    .content { padding: 18px; max-width: 1200px; width: 100%; margin: 0 auto; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px;
+    }
+    .kpi b { display: block; font-size: 22px; color: var(--gold-2); }
+    .kpi span { font-size: 12px; color: var(--muted); }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .panel h3 { margin: 0 0 12px; font-size: 16px; color: var(--gold-2); }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    label { display: block; font-size: 12.5px; color: var(--muted); margin: 8px 0 4px; font-weight: 600; }
+    input, select, textarea {
+      width: 100%; padding: 9px 12px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.14);
+      background: var(--card-2); color: var(--text); font-size: 13.5px; outline: none; font-family: inherit;
+    }
+    .btn {
+      border: 0; border-radius: 11px; padding: 9px 14px; font-weight: 700; font-size: 13px;
+      cursor: pointer; background: linear-gradient(135deg, #d97706, var(--gold)); color: #090b12;
+    }
+    .btn.sm { padding: 6px 10px; font-size: 12px; }
+    .btn.ghost { background: var(--card-2); color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .btn.ok { background: var(--ok); color: #fff; }
+    .btn.red { background: var(--red); color: #fff; }
+    .btn.purple { background: var(--purple); color: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); text-align: right; }
+    th { color: var(--gold-2); font-size: 12px; }
+    .table-wrap { overflow-x: auto; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: rgba(245, 158, 11, 0.16); color: var(--gold-2);
+    }
+    .pill.ok { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+    .pill.bad { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13.5px;
+    }
+    .switch-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); }
+    .gate-box { max-width: 420px; margin: 70px auto; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; }
+    #adm-toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #111827; color: #fff; border: 1px solid var(--gold);
+      padding: 10px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; z-index: 999;
+    }
+    @media (max-width: 820px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { flex-direction: row; overflow-x: auto; border-left: 0; border-bottom: 1px solid var(--line); }
+      .nav-item { white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">👑 REAL VOICE — لوحة الإدارة المركزية</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="adm-user-badge" class="pill">غير مسجل</span>
+      <button class="btn sm ghost" id="adm-logout-btn" type="button">خروج</button>
+    </div>
+  </header>
+
+  <div id="adm-gate" class="gate-box">
+    <h2 style="margin-top:0;color:var(--gold-2)">تسجيل الدخول الإداري</h2>
+    <p style="color:var(--muted);font-size:13px">سجّل الدخول بحساب مدير معتمد في مشروع Firebase (<code>real-voice-aec71</code>) للوصول إلى لوحة التحكم.</p>
+    <button class="btn" style="width:100%" id="adm-google-btn" type="button">الدخول بحساب Google الإداري</button>
+    <div id="adm-gate-msg" style="margin-top:12px;color:#fca5a5;font-size:12.5px"></div>
+  </div>
+
+  <div id="adm-shell" class="layout hidden">
+    <aside class="sidebar">
+      <button class="nav-item active" data-sec="dashboard" type="button">📊 الرئيسية والإحصائيات</button>
+      <button class="nav-item" data-sec="users" type="button">👥 إدارة المستخدمين</button>
+      <button class="nav-item" data-sec="wallet" type="button">🪙 إدارة العملات</button>
+      <button class="nav-item" data-sec="gifts" type="button">🎁 الهدايا الثابتة والتصنيفات</button>
+      <button class="nav-item" data-sec="lucky" type="button">🎰 هدايا الحظ والاحتمالات</button>
+      <button class="nav-item" data-sec="rooms" type="button">🎙️ إدارة الغرف الصوتية</button>
+      <button class="nav-item" data-sec="vip" type="button">👑 VIP والمستويات</button>
+      <button class="nav-item" data-sec="notifications" type="button">🔔 مركز الإشعارات</button>
+      <button class="nav-item" data-sec="settings" type="button">⚙️ إعدادات التطبيق والصيانة</button>
+      <button class="nav-item" data-sec="admins" type="button">🛡️ المشرفون والصلاحيات</button>
+      <button class="nav-item" data-sec="logs" type="button">📜 سجل العمليات</button>
+    </aside>
+
+    <main class="content">
+      <section id="sec-dashboard" class="section active">
+        <div class="kpis">
+          <div class="kpi"><b id="kpi-users">0</b><span>إجمالي المستخدمين</span></div>
+          <div class="kpi"><b id="kpi-rooms">0</b><span>الغرف الصوتية</span></div>
+          <div class="kpi"><b id="kpi-gifts">0</b><span>الهدايا الثابتة</span></div>
+          <div class="kpi"><b id="kpi-boxes">0</b><span>صناديق الحظ</span></div>
+          <div class="kpi"><b id="kpi-draws">0</b><span>سحوبات الحظ</span></div>
+        </div>
+        <div class="panel">
+          <h3>آخر سحوبات صناديق الحظ</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الفائز</th><th>الصندوق</th><th>الجائزة</th><th>الندرة</th><th>الوقت</th></tr></thead>
+              <tbody id="dash-draws-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-users" class="section">
+        <div class="panel">
+          <h3>إدارة المستخدمين</h3>
+          <input id="usr-search" placeholder="ابحث بالاسم أو ID أو المعرف..." style="margin-bottom:12px" />
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>المستخدم</th><th>ID</th><th>VIP</th><th>المستوى</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-wallet" class="section">
+        <div class="panel">
+          <h3>إدارة الرصيد والعملات</h3>
+          <div class="grid-2">
+            <div>
+              <label>معرف المستخدم (UID)</label>
+              <input id="wal-uid" placeholder="مثال: uid_123..." />
+            </div>
+            <div>
+              <label>العملية</label>
+              <select id="wal-op">
+                <option value="add">إضافة عملات (+)</option>
+                <option value="deduct">خصم عملات (-)</option>
+                <option value="set">تعيين رصيد محدد (=)</option>
+              </select>
+            </div>
+            <div>
+              <label>عدد العملات</label>
+              <input id="wal-amount" type="number" min="0" value="100" />
+            </div>
+            <div>
+              <label>سبب العملية</label>
+              <input id="wal-reason" placeholder="مثال: مكافأة فعالية أو شحن إداري" />
+            </div>
+          </div>
+          <button class="btn" style="margin-top:12px" id="wal-apply-btn" type="button">تنفيذ عملية العملات</button>
+        </div>
+        <div class="panel">
+          <h3>سجل العمليات المالية والهدايا</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الرقم</th><th>النوع</th><th>التفاصيل</th><th>المدير / المرسل</th><th>التاريخ</th></tr></thead>
+              <tbody id="wallet-logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-gifts" class="section">
+        <div class="panel">
+          <h3>إضافة / تعديل هدية ثابتة</h3>
+          <div class="grid-2">
+            <div><label>معرف الهدية (ID)</label><input id="g-id" placeholder="مثال: rose أو golden_mic" /></div>
+            <div><label>اسم الهدية</label><input id="g-name" placeholder="مثال: وردة حمراء" /></div>
+            <div><label>إيموجي الهدية</label><input id="g-emoji" placeholder="🌹" /></div>
+            <div><label>رابط صورة متحركة / GIF (اختياري)</label><input id="g-gif" placeholder="https://.../gift.gif" /></div>
+            <div><label>السعر بالعملات (0 للمجانية)</label><input id="g-price" type="number" min="0" value="25" /></div>
+            <div>
+              <label>التصنيف</label>
+              <select id="g-cat">
+                <option value="popular">شائعة</option>
+                <option value="free">مجانية</option>
+                <option value="vip">VIP</option>
+                <option value="events">مناسبات</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px">
+            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-free" /> هدية مجانية</label>
+            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-event" /> هدية مناسبات</label>
+            <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="g-active" checked /> مفعّلة</label>
+          </div>
+          <button class="btn" style="margin-top:12px" id="g-save-btn" type="button">حفظ الهدية</button>
+        </div>
+
+        <div class="panel">
+          <h3>قائمة الهدايا الثابتة</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الهدية</th><th>الاسم</th><th>السعر</th><th>التصنيف</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+              <tbody id="gifts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-lucky" class="section">
+        <div class="panel">
+          <h3>إدارة صناديق الحظ والاحتمالات (يجب أن يكون مجموع الاحتمالات 100%)</h3>
+          <div class="grid-2">
+            <div><label>معرف الصندوق</label><input id="lb-id" value="box_normal" /></div>
+            <div><label>اسم الصندوق</label><input id="lb-name" value="صندوق الحظ العادي" /></div>
+            <div><label>سعر الفتح بالعملات</label><input id="lb-price" type="number" min="0" value="50" /></div>
+            <div><label>حالة الصندوق</label><select id="lb-active"><option value="1">مفعل</option><option value="0">متوقف</option></select></div>
+          </div>
+          <label>الجوائز بصيغة JSON (الاسم، النوع، القيمة، الندرة، نسبة الاحتمال probability)</label>
+          <textarea id="lb-rewards-json" rows="7">[
+  {"id":"r1","title":"25 عملة","rewardType":"coins","value":25,"emoji":"🪙","rarity":"common","probability":50},
+  {"id":"r2","title":"100 عملة","rewardType":"coins","value":100,"emoji":"💰","rarity":"rare","probability":30},
+  {"id":"r3","title":"شارة النجم","rewardType":"badge","value":"badge_star","emoji":"🌟","rarity":"epic","probability":20}
+]</textarea>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn" id="lb-save-btn" type="button">حفظ الصندوق ونسب الاحتمالات</button>
+            <button class="btn ghost" id="lb-load-btn" type="button">تحميل بيانات الصندوق</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>الصناديق الحالية</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الصندوق</th><th>السعر</th><th>عدد الجوائز</th><th>مجموع النسب</th><th>الحالة</th></tr></thead>
+              <tbody id="lucky-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-rooms" class="section">
+        <div class="panel">
+          <h3>إدارة الغرف الصوتية</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>الغرفة</th><th>التصنيف</th><th>المالك</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+              <tbody id="rooms-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-vip" class="section">
+        <div class="panel">
+          <h3>منح أو إلغاء عضوية VIP لمستخدم</h3>
+          <div class="grid-2">
+            <div><label>معرف المستخدم (UID)</label><input id="vip-uid" placeholder="UID" /></div>
+            <div><label>مستوى VIP (0 لإلغاء، 1 إلى 3)</label><input id="vip-level" type="number" min="0" max="5" value="1" /></div>
+            <div><label>مدة الاشتراك بالأيام</label><input id="vip-days" type="number" min="1" max="365" value="30" /></div>
+          </div>
+          <button class="btn" style="margin-top:12px" id="vip-apply-btn" type="button">تطبيق عضوية VIP</button>
+        </div>
+      </section>
+
+      <section id="sec-notifications" class="section">
+        <div class="panel">
+          <h3>إرسال إشعار عام</h3>
+          <label>العنوان</label><input id="nt-title" placeholder="إعلان هام" />
+          <label>نص الإشعار</label><textarea id="nt-body" rows="3" placeholder="اكتب نص الإشعار لجميع المستخدمين..."></textarea>
+          <button class="btn" style="margin-top:12px" id="nt-send-btn" type="button">إرسال الإشعار</button>
+        </div>
+      </section>
+
+      <section id="sec-settings" class="section">
+        <div class="panel">
+          <h3>إعدادات التطبيق وتشغيل الخدمات</h3>
+          <div class="grid-2">
+            <div><label>اسم التطبيق</label><input id="st-app-name" value="REAL VOICE" /></div>
+            <div><label>نص الترحيب</label><input id="st-welcome" /></div>
+          </div>
+          <div class="switch-row"><span>وضع الصيانة (إيقاف التطبيق مؤقتاً)</span><input type="checkbox" id="st-maint" /></div>
+          <div class="switch-row"><span>تفعيل الهدايا الثابتة</span><input type="checkbox" id="st-gifts" checked /></div>
+          <div class="switch-row"><span>تفعيل صناديق الحظ (Lucky Gifts)</span><input type="checkbox" id="st-lucky" checked /></div>
+          <div class="switch-row"><span>تفعيل إشعارات التطبيق</span><input type="checkbox" id="st-notifs" checked /></div>
+          <div class="switch-row"><span>السماح بإنشاء الغرف</span><input type="checkbox" id="st-rooms" checked /></div>
+          <button class="btn" style="margin-top:12px" id="st-save-btn" type="button">حفظ إعدادات التطبيق</button>
+        </div>
+      </section>
+
+      <section id="sec-admins" class="section">
+        <div class="panel">
+          <h3>إدارة المشرفين والصلاحيات</h3>
+          <div class="grid-2">
+            <div><label>معرف المستخدم (UID)</label><input id="adm-target-uid" placeholder="UID" /></div>
+            <div>
+              <label>الدور الإداري</label>
+              <select id="adm-role">
+                <option value="MODERATOR">MODERATOR</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn" style="margin-top:12px" id="adm-grant-btn" type="button">حفظ الصلاحية</button>
+        </div>
+      </section>
+
+      <section id="sec-logs" class="section">
+        <div class="panel">
+          <h3>سجل العمليات الإدارية</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>العملية</th><th>الهدف</th><th>بواسطة</th><th>التاريخ</th></tr></thead>
+              <tbody id="logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="adm-toast" class="hidden"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script>
+    (function () {
+      var FIREBASE_CONFIG = {
+        apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
+        authDomain: "real-voice-aec71.firebaseapp.com",
+        databaseURL: "https://real-voice-aec71-default-rtdb.firebaseio.com",
+        projectId: "real-voice-aec71",
+        storageBucket: "real-voice-aec71.firebasestorage.app",
+        messagingSenderId: "1051527775983",
+        appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
+      };
+
+      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+      var auth = firebase.auth(app);
+      var db = firebase.database(app);
+
+      var state = {
+        me: null,
+        role: "",
+        profiles: {},
+        rooms: {},
+        gifts: {},
+        boxes: {},
+        draws: {},
+        logs: {},
+        txs: {}
+      };
+
+      function $(id) { return document.getElementById(id); }
+      function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+      function fmtTime(t) { if (!t) return "—"; var d = new Date(Number(t)); return d.toLocaleDateString("ar-EG") + " " + d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }); }
+      function toast(msg) {
+        var el = $("adm-toast");
+        el.textContent = msg;
+        el.classList.remove("hidden");
+        clearTimeout(window._admT);
+        window._admT = setTimeout(function () { el.classList.add("hidden"); }, 2600);
+      }
+
+      function writeAdminLog(action, target, details) {
+        if (!state.me) return;
+        db.ref("admin_logs").push({
+          action: action,
+          target: target || "",
+          details: details || "",
+          adminUid: state.me.uid,
+          adminName: state.me.displayName || state.me.email || state.me.uid,
+          createdAt: Date.now()
+        }).catch(function () { /* */ });
+      }
+
+      function renderAll() {
+        var uList = Object.keys(state.profiles);
+        var rList = Object.keys(state.rooms);
+        var gList = Object.keys(state.gifts);
+        var bList = Object.keys(state.boxes);
+        var dList = Object.keys(state.draws).map(function (k) { return state.draws[k]; }).sort(function (a, b) { return (b.t || b.createdAt || 0) - (a.t || a.createdAt || 0); });
+
+        $("kpi-users").textContent = uList.length;
+        $("kpi-rooms").textContent = rList.length;
+        $("kpi-gifts").textContent = gList.length;
+        $("kpi-boxes").textContent = bList.length;
+        $("kpi-draws").textContent = dList.length;
+
+        $("dash-draws-tbody").innerHTML = dList.slice(0, 15).map(function (d) {
+          return "<tr><td>" + esc(d.userName || d.userId || "") + "</td><td>" + esc(d.boxName || "") + "</td><td>" + esc((d.emoji || "") + " " + (d.title || "")) + "</td><td><span class='pill'>" + esc(d.rarity || "") + "</span></td><td>" + fmtTime(d.t || d.createdAt) + "</td></tr>";
+        }).join("") || "<tr><td colspan='5'>لا توجد سحوبات بعد</td></tr>";
+
+        var q = ($("usr-search").value || "").trim().toLowerCase();
+        var filteredUsers = uList.filter(function (uidKey) {
+          var p = state.profiles[uidKey] || {};
+          if (!q) return true;
+          return String(p.name || "").toLowerCase().indexOf(q) >= 0 || String(p.specialId || "").toLowerCase().indexOf(q) >= 0 || uidKey.toLowerCase().indexOf(q) >= 0;
+        });
+
+        $("users-tbody").innerHTML = filteredUsers.slice(0, 60).map(function (uidKey) {
+          var p = state.profiles[uidKey] || {};
+          return "<tr><td>" + esc(p.name || "مستخدم") + "</td><td>" + esc(p.specialId || uidKey) + "</td><td>VIP " + Number(p.vip || 0) + "</td><td>Lv." + Number(p.level || 1) + "</td><td>" + (p.online ? "<span class='pill ok'>متصل</span>" : "<span class='pill'>غير متصل</span>") + "</td><td><button class='btn sm ghost' onclick=\"document.getElementById('wal-uid').value='" + esc(uidKey) + "';toast('تم تحديد UID في إدارة العملات')\">عملات</button></td></tr>";
+        }).join("") || "<tr><td colspan='6'>لا يوجد مستخدمون</td></tr>";
+
+        $("gifts-tbody").innerHTML = gList.map(function (gidKey) {
+          var g = state.gifts[gidKey] || {};
+          return "<tr><td>" + esc(g.e || "🎁") + "</td><td>" + esc(g.n || gidKey) + "</td><td>" + (g.isFree || Number(g.p || 0) === 0 ? "مجانية" : Number(g.p || 0) + " 🪙") + "</td><td>" + esc(g.cat || "popular") + "</td><td>" + (g.active !== false ? "<span class='pill ok'>مفعلة</span>" : "<span class='pill bad'>متوقفة</span>") + "</td><td><button class='btn sm red' data-del-gift='" + esc(gidKey) + "'>حذف</button></td></tr>";
+        }).join("") || "<tr><td colspan='6'>لا توجد هدايا مضافة في قاعدة البيانات بعد (التطبيق يستخدم الافتراضية تلقائياً)</td></tr>";
+
+        document.querySelectorAll("[data-del-gift]").forEach(function (btn) {
+          btn.onclick = function () {
+            var k = btn.getAttribute("data-del-gift");
+            db.ref("gifts/" + k).remove().then(function () { writeAdminLog("delete_gift", k, "حذف هدية ثابتة"); toast("تم حذف الهدية"); });
+          };
+        });
+
+        $("lucky-tbody").innerHTML = bList.map(function (bidKey) {
+          var b = state.boxes[bidKey] || {};
+          var sumProb = (b.rewards || []).reduce(function (a, r) { return a + Number(r.probability || 0); }, 0);
+          return "<tr><td>" + esc(b.name || bidKey) + "</td><td>" + Number(b.price || 0) + " 🪙</td><td>" + ((b.rewards || []).length) + "</td><td><span class='pill " + (sumProb === 100 ? "ok" : "bad") + "'>" + sumProb + "%</span></td><td>" + (b.active !== false ? "مفعل" : "متوقف") + "</td></tr>";
+        }).join("") || "<tr><td colspan='5'>لا توجد صناديق مخصصة في قاعدة البيانات بعد</td></tr>";
+
+        $("rooms-tbody").innerHTML = rList.map(function (ridKey) {
+          var r = state.rooms[ridKey] || {};
+          return "<tr><td>" + esc(r.name || ridKey) + "</td><td>" + esc(r.cat || "chat") + "</td><td>" + esc(r.owner || "") + "</td><td>" + (r.locked ? "<span class='pill bad'>مقفلة</span>" : "<span class='pill ok'>مفتوحة</span>") + "</td><td><button class='btn sm ghost' data-tog-room='" + esc(ridKey) + "'>" + (r.locked ? "فتح" : "إغلاق") + "</button> <button class='btn sm red' data-del-room='" + esc(ridKey) + "'>حذف</button></td></tr>";
+        }).join("") || "<tr><td colspan='5'>لا توجد غرف</td></tr>";
+
+        document.querySelectorAll("[data-tog-room]").forEach(function (btn) {
+          btn.onclick = function () {
+            var ridKey = btn.getAttribute("data-tog-room");
+            var cur = !!(state.rooms[ridKey] && state.rooms[ridKey].locked);
+            db.ref("rooms/" + ridKey + "/locked").set(!cur).then(function () { writeAdminLog("toggle_room_lock", ridKey, !cur ? "إغلاق" : "فتح"); toast("تم تحديث حالة الغرفة"); });
+          };
+        });
+        document.querySelectorAll("[data-del-room]").forEach(function (btn) {
+          btn.onclick = function () {
+            var ridKey = btn.getAttribute("data-del-room");
+            db.ref("rooms/" + ridKey).remove().then(function () { writeAdminLog("delete_room", ridKey, "حذف غرفة"); toast("تم حذف الغرفة"); });
+          };
+        });
+
+        var txArr = Object.keys(state.txs).map(function (k) { return Object.assign({ id: k }, state.txs[k]); }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        $("wallet-logs-tbody").innerHTML = txArr.slice(0, 25).map(function (t) {
+          return "<tr><td>" + esc(t.id) + "</td><td>" + esc(t.op || "هدية") + "</td><td>" + esc(t.reason || t.giftName || "") + " (" + Number(t.amount || t.totalCost || 0) + ")</td><td>" + esc(t.adminName || t.fromName || "") + "</td><td>" + fmtTime(t.createdAt) + "</td></tr>";
+        }).join("") || "<tr><td colspan='5'>لا توجد حركات مسجلة</td></tr>";
+
+        var logArr = Object.keys(state.logs).map(function (k) { return state.logs[k]; }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+        $("logs-tbody").innerHTML = logArr.slice(0, 30).map(function (l) {
+          return "<tr><td>" + esc(l.action || "") + "</td><td>" + esc(l.target || "") + "</td><td>" + esc(l.adminName || "") + "</td><td>" + fmtTime(l.createdAt) + "</td></tr>";
+        }).join("") || "<tr><td colspan='4'>لا توجد سجلات بعد</td></tr>";
+      }
+
+      function bindAdminActions() {
+        document.querySelectorAll(".nav-item").forEach(function (btn) {
+          btn.onclick = function () {
+            var sec = btn.getAttribute("data-sec");
+            document.querySelectorAll(".nav-item").forEach(function (b) { b.classList.toggle("active", b === btn); });
+            document.querySelectorAll(".section").forEach(function (s) { s.classList.toggle("active", s.id === "sec-" + sec); });
+          };
+        });
+
+        $("usr-search").oninput = renderAll;
+
+        $("wal-apply-btn").onclick = async function () {
+          var targetUid = ($("wal-uid").value || "").trim();
+          var op = $("wal-op").value;
+          var amount = Math.max(0, Number($("wal-amount").value || 0));
+          var reason = ($("wal-reason").value || "تعديل إداري").trim();
+          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
+          var ref = db.ref("economy/wallets/" + targetUid + "/balance");
+          await ref.transaction(function (cur) {
+            var v = Math.max(0, Number(cur || 0));
+            if (op === "add") return v + amount;
+            if (op === "deduct") return Math.max(0, v - amount);
+            return amount;
+          });
+          await db.ref("wallet_transactions").push({
+            targetUid: targetUid, op: op, amount: amount, reason: reason,
+            adminUid: state.me.uid, adminName: state.me.displayName || state.me.email || state.me.uid, createdAt: Date.now()
+          });
+          writeAdminLog("wallet_" + op, targetUid, amount + " — " + reason);
+          toast("تم تنفيذ عملية العملات بنجاح ✅");
+        };
+
+        $("g-save-btn").onclick = async function () {
+          var gid = ($("g-id").value || "").trim() || ("gift_" + Date.now().toString(36));
+          var gname = ($("g-name").value || "").trim();
+          if (!gname) { toast("اكتب اسم الهدية"); return; }
+          var gObj = {
+            id: gid,
+            n: gname,
+            e: ($("g-emoji").value || "🎁").trim(),
+            gifUrl: ($("g-gif").value || "").trim(),
+            p: Math.max(0, Number($("g-price").value || 0)),
+            cat: $("g-cat").value,
+            isFree: $("g-free").checked || Number($("g-price").value || 0) === 0,
+            isEvent: $("g-event").checked,
+            active: $("g-active").checked
+          };
+          await db.ref("gifts/" + gid).set(gObj);
+          writeAdminLog("save_gift", gid, gname);
+          toast("تم حفظ الهدية الثابتة ✅");
+        };
+
+        $("lb-load-btn").onclick = function () {
+          var bid = ($("lb-id").value || "").trim();
+          var box = state.boxes[bid];
+          if (!box) { toast("الصندوق غير موجود في قاعدة البيانات بعد"); return; }
+          $("lb-name").value = box.name || "";
+          $("lb-price").value = Number(box.price || 0);
+          $("lb-active").value = box.active === false ? "0" : "1";
+          $("lb-rewards-json").value = JSON.stringify(box.rewards || [], null, 2);
+          toast("تم تحميل بيانات الصندوق");
+        };
+
+        $("lb-save-btn").onclick = async function () {
+          var bid = ($("lb-id").value || "").trim() || ("box_" + Date.now().toString(36));
+          var bname = ($("lb-name").value || "").trim();
+          var rewards = [];
+          try {
+            rewards = JSON.parse($("lb-rewards-json").value || "[]");
+            if (!Array.isArray(rewards) || !rewards.length) throw new Error("empty");
+          } catch (e) {
+            toast("صيغة JSON للجوائز غير صحيحة");
+            return;
+          }
+          var totalProb = rewards.reduce(function (acc, item) { return acc + Number(item.probability || 0); }, 0);
+          if (Math.round(totalProb) !== 100) {
+            toast("يجب أن يساوي مجموع نسب الاحتمالات 100% (المجموع الحالي: " + totalProb + "%)");
+            return;
+          }
+          var boxObj = {
+            id: bid,
+            name: bname || "صندوق حظ",
+            price: Math.max(0, Number($("lb-price").value || 0)),
+            active: $("lb-active").value === "1",
+            rewards: rewards
+          };
+          await db.ref("lucky_boxes/" + bid).set(boxObj);
+          writeAdminLog("save_lucky_box", bid, bname + " (100%)");
+          toast("تم حفظ صندوق الحظ ونسب الاحتمالات (100%) ✅");
+        };
+
+        $("vip-apply-btn").onclick = async function () {
+          var targetUid = ($("vip-uid").value || "").trim();
+          var lv = Math.max(0, Number($("vip-level").value || 0));
+          var days = Math.max(1, Number($("vip-days").value || 30));
+          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
+          var exp = lv > 0 ? Date.now() + days * 86400000 : 0;
+          await db.ref("users/" + targetUid).update({ vip: lv, vipExpiresAt: exp });
+          await db.ref("publicProfiles/" + targetUid).update({ vip: lv, vipExpiresAt: exp });
+          writeAdminLog("set_vip", targetUid, "VIP " + lv + " لـ " + days + " يوم");
+          toast("تم تحديث عضوية VIP ✅");
+        };
+
+        $("nt-send-btn").onclick = async function () {
+          var title = ($("nt-title").value || "").trim();
+          var bodyTxt = ($("nt-body").value || "").trim();
+          if (!bodyTxt) { toast("اكتب نص الإشعار"); return; }
+          await db.ref("broadcast_notifications").push({
+            title: title || "إعلان",
+            text: bodyTxt,
+            type: "broadcast",
+            createdAt: Date.now()
+          });
+          writeAdminLog("send_notification", "all", title || bodyTxt);
+          $("nt-body").value = "";
+          toast("تم إرسال الإشعار العام ✅");
+        };
+
+        $("st-save-btn").onclick = async function () {
+          var stObj = {
+            appName: ($("st-app-name").value || "REAL VOICE").trim(),
+            welcomeText: ($("st-welcome").value || "").trim(),
+            maintenanceMode: $("st-maint").checked,
+            giftsEnabled: $("st-gifts").checked,
+            luckyGiftsEnabled: $("st-lucky").checked,
+            notificationsEnabled: $("st-notifs").checked,
+            allowCreateRoom: $("st-rooms").checked
+          };
+          await db.ref("app_settings").set(stObj);
+          writeAdminLog("update_app_settings", "app_settings", JSON.stringify(stObj));
+          toast("تم حفظ إعدادات التطبيق ✅");
+        };
+
+        $("adm-grant-btn").onclick = async function () {
+          if (state.role !== "SUPER_ADMIN") {
+            toast("إضافة وتعديل المشرفين متاح لـ SUPER_ADMIN فقط");
+            return;
+          }
+          var targetUid = ($("adm-target-uid").value || "").trim();
+          var role = $("adm-role").value;
+          if (!targetUid) { toast("أدخل معرف المستخدم"); return; }
+          await db.ref("admin_users/" + targetUid).set({ uid: targetUid, role: role, updatedAt: Date.now() });
+          await db.ref("users/" + targetUid).update({ isAdmin: true, adminRole: role });
+          writeAdminLog("grant_admin_role", targetUid, role);
+          toast("تم تعيين صلاحية " + role + " ✅");
+        };
+      }
+
+      async function verifyAdminAndStart(user) {
+        state.me = user;
+        var adminSnap = await db.ref("admin_users/" + user.uid).once("value");
+        var uSnap = await db.ref("users/" + user.uid).once("value");
+        var adminRec = adminSnap.val() || {};
+        var uRec = uSnap.val() || {};
+        var role = adminRec.role || uRec.adminRole || (uRec.isAdmin ? "ADMIN" : "");
+
+        if (!role) {
+          $("adm-gate-msg").textContent = "هذا الحساب (" + user.uid + ") لا يملك صلاحية إدارية في admin_users.";
+          return;
+        }
+
+        state.role = role;
+        $("adm-gate").classList.add("hidden");
+        $("adm-shell").classList.remove("hidden");
+        $("adm-user-badge").textContent = (user.displayName || user.email || user.uid) + " • " + role;
+
+        bindAdminActions();
+
+        db.ref("publicProfiles").on("value", function (s) { state.profiles = s.val() || {}; renderAll(); });
+        db.ref("rooms").on("value", function (s) { state.rooms = s.val() || {}; renderAll(); });
+        db.ref("gifts").on("value", function (s) { state.gifts = s.val() || {}; renderAll(); });
+        db.ref("lucky_boxes").on("value", function (s) { state.boxes = s.val() || {}; renderAll(); });
+        db.ref("lucky_draws").limitToLast(50).on("value", function (s) { state.draws = s.val() || {}; renderAll(); });
+        db.ref("admin_logs").limitToLast(50).on("value", function (s) { state.logs = s.val() || {}; renderAll(); });
+        db.ref("wallet_transactions").limitToLast(50).on("value", function (s) { state.txs = s.val() || {}; renderAll(); });
+        db.ref("app_settings").once("value", function (s) {
+          var st = s.val();
+          if (st) {
+            if (st.appName) $("st-app-name").value = st.appName;
+            if (st.welcomeText) $("st-welcome").value = st.welcomeText;
+            $("st-maint").checked = !!st.maintenanceMode;
+            $("st-gifts").checked = st.giftsEnabled !== false;
+            $("st-lucky").checked = st.luckyGiftsEnabled !== false;
+            $("st-notifs").checked = st.notificationsEnabled !== false;
+            $("st-rooms").checked = st.allowCreateRoom !== false;
+          }
+        });
+      }
+
+      $("adm-google-btn").onclick = function () {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(function (e) {
+          $("adm-gate-msg").textContent = e && e.message ? e.message : "تعذر تسجيل الدخول";
+        });
+      };
+
+      $("adm-logout-btn").onclick = function () {
+        auth.signOut().then(function () { location.reload(); });
+      };
+
+      auth.onAuthStateChanged(function (user) {
+        if (user && user.uid) verifyAdminAndStart(user);
+      });
+    })();
+  </script>
+</body>
+</html>
