@@ -2773,7 +2773,7 @@
         '<div style="flex:1;min-width:0"><div class="' + (vipLv >= 2 ? "name vip-gold" : "name") + '" style="font-size:17px;font-weight:800">' + esc(u.name) + (vipLv > 0 ? ' <span class="tag vip">VIP ' + vipLv + "</span>" : "") + (u.verified ? ' <span class="tag verified">✓</span>' : "") + "</div>" +
           '<div class="meta">ID: ' + esc(displayUserId(u)) + " • " + (u.online ? "متصل الآن" : "غير متصل") + "</div>" +
           '<div class="meta">الحالة: <b>' + esc(rel.label) + "</b>" + (curRoom ? " • في غرفة: <b>" + esc(curRoom.name) + "</b>" : "") + "</div></div></div>" +
-      '<div class="stats-grid" style="margin-bottom:10px"><div class="stat-box"><b>' + Number(u.followersCount || 0) + "</b><span>المتابعون</span></div><div class="stat-box"><b>' + Number(u.followingCount || 0) + "</b><span>أتابع</span></div><div class="stat-box"><b>" + Number(u.friendsCount || 0) + "</b><span>الأصدقاء</span></div></div>" +
+      '<div class="stats-grid" style="margin-bottom:10px"><div class="stat-box"><b>' + Number(u.followersCount || 0) + '</b><span>المتابعون</span></div><div class="stat-box"><b>' + Number(u.followingCount || 0) + '</b><span>أتابع</span></div><div class="stat-box"><b>' + Number(u.friendsCount || 0) + '</b><span>الأصدقاء</span></div></div>' +
       '<div class="pf-bio-box" style="margin-bottom:12px">' + esc(u.bio || "مرحباً بك في REAL VOICE") + "</div>" +
       '<div style="display:flex;gap:7px;flex-wrap:wrap">' + followBtnHtml + friendBtnHtml + blockBtnHtml +
         (curRoom ? '<button class="btn sm ok" id="sheet-join-room-btn" type="button">🎙️ دخول الغرفة</button>' : "") +
