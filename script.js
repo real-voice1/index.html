@@ -1421,6 +1421,33 @@
     hideSplash();
   }
 
+  async function signInWithGoogleApp() {
+    setAuthError("");
+    if (UI.authSigningIn) return;
+    UI.authSigningIn = true;
+    var btn = $("google-login-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "جاري الاتصال بـ Google..."; }
+    try {
+      if (!cloud.on || !cloud.auth) throw new Error("Firebase غير متصل");
+      var provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      var res = await cloud.auth.signInWithPopup(provider);
+      if (res && res.user) {
+        await handleAuthenticatedUser(res.user);
+      }
+    } catch (e) {
+      if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) {
+        var providerRedir = new firebase.auth.GoogleAuthProvider();
+        await cloud.auth.signInWithRedirect(providerRedir);
+        return;
+      }
+      setAuthError("تعذر تسجيل الدخول بحساب Google: " + (e && e.message ? e.message : ""));
+    } finally {
+      UI.authSigningIn = false;
+      if (btn) { btn.disabled = false; btn.textContent = "تسجيل الدخول بحساب Google"; }
+    }
+  }
+
   async function startWithoutGoogle() {
     setAuthError("");
     if (UI.authSigningIn) return;
@@ -1999,6 +2026,7 @@
     var pill = $("session-mode-pill");
     if (pill) {
       if (UI.isGuest) { pill.textContent = "زائر"; pill.classList.add("guest"); }
+      else if (UI.googleUser) { pill.textContent = "Google"; pill.classList.remove("guest"); }
       else { pill.textContent = "حساب مجهول"; pill.classList.remove("guest"); }
     }
     var tBtn = $("theme-toggle-btn");
@@ -3237,6 +3265,7 @@
       };
     }
 
+    if ($("google-login-btn")) $("google-login-btn").onclick = signInWithGoogleApp;
     if ($("guest-login-btn")) $("guest-login-btn").onclick = startWithoutGoogle;
     if ($("ob-photo-input")) {
       $("ob-photo-input").onchange = async function () {
@@ -3462,10 +3491,23 @@
     var safetyHideTimer = setTimeout(function () { hideSplash(); }, 1200);
 
     if (cloud.on && cloud.auth) {
+      cloud.auth.getRedirectResult().then(async function (res) {
+        if (res && res.user) {
+          clearTimeout(safetyHideTimer);
+          await handleAuthenticatedUser(res.user);
+        }
+      }).catch(function () { /* */ });
+
       var handledInitialAuth = false;
       cloud.auth.onAuthStateChanged(async function (authUser) {
         if (handledInitialAuth && !authUser) return;
-        if (authUser) {
+        if (authUser && !authUser.isAnonymous) {
+          handledInitialAuth = true;
+          clearTimeout(safetyHideTimer);
+          await handleAuthenticatedUser(authUser);
+          return;
+        }
+        if (authUser && authUser.isAnonymous) {
           handledInitialAuth = true;
           await handleAuthenticatedUser(authUser);
           return;
@@ -3478,7 +3520,7 @@
             clearTimeout(safetyHideTimer);
             hideSplash();
             showAuthGate(true, "login");
-            setAuthError("فعّل تسجيل الدخول المجهول (Anonymous) من Firebase Authentication ثم اضغط ابدأ الآن.");
+            setAuthError("فعّل تسجيل الدخول المجهول (Anonymous) أو Google من Firebase Authentication ثم اضغط تسجيل الدخول.");
           }
         }
       });
