@@ -2,997 +2,422 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#101225" />
-  <title>REAL VOICE | لوحة التحكم</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>لوحة إدارة REAL VOICE</title>
   <style>
-    :root {
-      --bg: #0b0d18;
-      --card: #171a2e;
-      --card2: #20243c;
-      --line: #343954;
-      --txt: #f5f6ff;
-      --muted: #a8aecb;
-      --a: #8b5cf6;
-      --b: #ec4899;
-      --ok: #16a34a;
-      --bad: #dc2626;
-      --gold: #f59e0b;
+    :root{
+      --bg:#0b0d17; --card:#131729; --card2:#1a2038; --line:rgba(255,255,255,.11);
+      --text:#f5f7ff; --muted:#9aa4c7; --accent:#7c3aed; --accent2:#db2777;
+      --ok:#16a34a; --danger:#dc2626; --gold:#f59e0b; --r:16px;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: radial-gradient(circle at 10% 0, #292052 0, transparent 35%), var(--bg);
-      color: var(--txt);
-      font-family: system-ui, Tahoma, Arial, sans-serif;
-      min-height: 100vh;
-    }
-    button, input, select, textarea { font: inherit; }
-    button { cursor: pointer; border: 0; }
-    .wrap { max-width: 1050px; margin: auto; padding: 16px; }
-    .head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 15px 0;
-    }
-    .brand { font-size: 21px; font-weight: 900; }
-    .brand small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
-    .btn {
-      padding: 10px 14px;
-      border-radius: 12px;
-      color: #fff;
-      background: linear-gradient(120deg, var(--a), var(--b));
-      font-weight: 800;
-    }
-    .btn.secondary { background: var(--card2); border: 1px solid var(--line); }
-    .btn.danger { background: var(--bad); }
-    .btn.ok { background: var(--ok); }
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-    .card {
-      background: rgba(23, 26, 46, 0.94);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-      margin: 12px 0;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
-    }
-    .hidden { display: none !important; }
-    .muted, .hint { color: var(--muted); font-size: 13px; line-height: 1.7; }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
-    .stat { background: var(--card2); padding: 13px; border-radius: 13px; text-align: center; }
-    .stat b { font-size: 22px; display: block; }
-    .tabs { display: flex; gap: 7px; overflow: auto; padding: 6px 0; }
-    .tab {
-      white-space: nowrap;
-      padding: 10px 14px;
-      border-radius: 12px;
-      background: var(--card2);
-      color: var(--txt);
-      border: 1px solid var(--line);
-    }
-    .tab.active { background: linear-gradient(120deg, var(--a), var(--b)); border-color: transparent; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .field { margin: 10px 0; }
-    .field label { display: block; margin-bottom: 6px; font-size: 13px; color: #d9dcf5; }
-    .field input, .field textarea, .field select {
-      width: 100%;
-      background: #0e1122;
-      color: var(--txt);
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      padding: 11px;
-      outline: none;
-    }
-    .field textarea { min-height: 75px; resize: vertical; }
-    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .row > * { flex: 1; }
-    .item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-      background: var(--card2);
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      margin: 8px 0;
-    }
-    .thumb {
-      width: 70px;
-      height: 55px;
-      border-radius: 9px;
-      object-fit: cover;
-      background: #090b16;
-      flex-shrink: 0;
-    }
-    .item .info { min-width: 0; flex: 1; }
-    .item b { display: block; overflow-wrap: anywhere; }
-    .item small { color: var(--muted); }
-    .actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .actions button { padding: 7px 10px; border-radius: 9px; background: #343954; color: #fff; }
-    .actions .del { background: #8b1d35; }
-    .actions .ok { background: #15803d; }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-inline-start: 6px;
-    }
-    .badge.ban { background: rgba(220, 38, 38, 0.22); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.45); }
-    .badge.open { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
-    .badge.done { background: rgba(22, 163, 74, 0.2); color: #86efac; border: 1px solid rgba(22, 163, 74, 0.4); }
-    .notice { padding: 12px; border-radius: 12px; background: #30264a; color: #e9ddff; margin: 10px 0; line-height: 1.6; font-size: 13px; }
-    .status { font-size: 13px; margin-top: 8px; min-height: 18px; }
-    .status.error { color: #fca5a5; }
-    .status.good { color: #86efac; }
-    .check { display: flex; align-items: center; gap: 8px; }
-    .login { max-width: 500px; margin: 10vh auto; text-align: center; }
-    .footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px; }
-    @media (max-width: 760px) {
-      .stats { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 620px) {
-      .grid { grid-template-columns: 1fr; }
-      .wrap { padding: 11px; }
-      .item { align-items: flex-start; flex-wrap: wrap; }
-      .actions { max-width: 100%; }
-    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh}
+    .hidden{display:none!important}
+    .wrap{max-width:980px;margin:0 auto;padding:14px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;font-weight:900}
+    .btn{border:0;border-radius:12px;padding:9px 13px;font-weight:800;font-size:13px;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+    .btn.sm{padding:6px 10px;font-size:11.5px;border-radius:10px}
+    .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+    .btn.ok{background:var(--ok)}
+    .btn.red{background:var(--danger)}
+    .btn.gold{background:linear-gradient(135deg,#d97706,var(--gold));color:#111827}
+    .login-box{max-width:430px;margin:50px auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;text-align:center}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+    .stat b{display:block;font-size:20px;color:#c4b5fd}
+    .stat span{font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px}
+    .tab{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+    .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+    .search{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);margin-bottom:12px;font-size:13.5px}
+    .list{display:flex;flex-direction:column;gap:9px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);flex-wrap:wrap}
+    .name{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .meta{font-size:12px;color:var(--muted);margin-top:2px}
+    .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08)}
+    .tag.ok{background:rgba(22,163,74,.2);color:#4ade80}
+    .tag.bad{background:rgba(220,38,38,.2);color:#fca5a5}
+    .tag.gold{background:rgba(245,158,11,.2);color:#fbbf24}
+    .acts{display:flex;gap:6px;flex-wrap:wrap}
+    .notice{padding:10px 12px;border-radius:12px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.35);font-size:12.5px;margin-bottom:12px;line-height:1.5}
+    .empty{text-align:center;color:var(--muted);padding:24px;font-size:13.5px}
+    #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;border:1px solid rgba(255,255,255,.18);padding:9px 16px;border-radius:999px;font-size:12.5px;font-weight:700;z-index:999;opacity:0;pointer-events:none;transition:opacity .2s}
+    #toast.show{opacity:1}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="head">
-      <div class="brand">🎙️ REAL VOICE <small>لوحة الإدارة والتحكم المباشر</small></div>
-      <div class="row" style="flex: 0 1 auto">
-        <span id="who" class="muted"></span>
-        <button id="logout" class="btn secondary hidden" type="button">تسجيل الخروج</button>
-      </div>
-    </header>
-
-    <section id="login" class="card login">
-      <div style="font-size: 48px">🛡️</div>
-      <h2>دخول لوحة التحكم</h2>
-      <p class="muted">سجّل الدخول بحساب Google المعتمد كمشرف داخل Firebase.</p>
-      <button id="loginBtn" class="btn" type="button">تسجيل الدخول بحساب Google</button>
-      <div id="loginStatus" class="status"></div>
-    </section>
-
-    <main id="panel" class="hidden">
-      <div class="notice">⚠️ التعديلات تُحفظ مباشرة في Firebase وتظهر للمستخدمين حسب دعم نسخة التطبيق الحالية. لا تشارك رابط اللوحة باعتباره كلمة مرور؛ الصلاحية تُفحص من Firebase.</div>
-
-      <div class="stats">
-        <div class="stat"><b id="roomCount">0</b><span>الغرف</span></div>
-        <div class="stat"><b id="bannerCount">0</b><span>البنرات</span></div>
-        <div class="stat"><b id="userCount">—</b><span>المستخدمون</span></div>
-        <div class="stat"><b id="reportCount">0</b><span>البلاغات</span></div>
-      </div>
-
-      <nav class="tabs">
-        <button class="tab active" data-tab="rooms" type="button">🎙️ الغرف والترتيب</button>
-        <button class="tab" data-tab="banners" type="button">🖼️ البنرات والصور</button>
-        <button class="tab" data-tab="users" type="button">👥 المستخدمون وID</button>
-        <button class="tab" data-tab="moderation" type="button">🚨 البلاغات والحظر</button>
-        <button class="tab" data-tab="settings" type="button">⚙️ إعدادات عامة</button>
-      </nav>
-
-      <section id="tab-rooms" class="card">
-        <h2>إدارة الغرف</h2>
-        <p class="muted">إضافة غرفة، تعديل بياناتها وصورتها وتصنيفها، أو رفعها وخفضها في ترتيب الظهور. غرف الألعاب تُضاف بتصنيف «ألعاب».</p>
-        <div class="grid">
-          <div class="field">
-            <label for="rName">اسم الغرفة</label>
-            <input id="rName" maxlength="40" placeholder="اسم الغرفة" />
-          </div>
-          <div class="field">
-            <label for="rCat">تصنيف الغرفة</label>
-            <select id="rCat">
-              <option value="chat">دردشة</option>
-              <option value="games">ألعاب</option>
-              <option value="vip">VIP</option>
-              <option value="music">موسيقى</option>
-              <option value="friends">أصدقاء</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rDesc">وصف الغرفة</label>
-            <input id="rDesc" maxlength="120" placeholder="وصف مختصر" />
-          </div>
-          <div class="field">
-            <label for="rSeats">عدد المقاعد</label>
-            <select id="rSeats">
-              <option value="6">6</option>
-              <option value="9" selected>9</option>
-              <option value="12">12</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="rPhoto">رابط صورة الغرفة (اختياري)</label>
-            <input id="rPhoto" placeholder="https://..." />
-          </div>
-          <div class="field">
-            <label for="rOrder">ترتيب الظهور (الأقل يظهر أولاً)</label>
-            <input id="rOrder" type="number" value="100" min="0" />
-          </div>
-        </div>
-        <div class="row">
-          <label class="check"><input id="rPrivate" type="checkbox" /> غرفة خاصة</label>
-          <label class="check"><input id="rApproval" type="checkbox" /> المايك بطلب</label>
-        </div>
-        <div class="field hidden" id="passWrap">
-          <label for="rPass">كلمة مرور الغرفة</label>
-          <input id="rPass" type="password" maxlength="32" />
-        </div>
-        <div class="row">
-          <button id="saveRoom" class="btn" type="button">➕ إضافة الغرفة</button>
-          <button id="cancelEdit" class="btn secondary hidden" type="button">إلغاء التعديل</button>
-        </div>
-        <div id="roomStatus" class="status"></div>
-        <hr style="border-color: var(--line); margin: 18px 0" />
-        <div class="row">
-          <h3 style="margin: 0">الغرف الحالية</h3>
-          <button id="reloadRooms" class="btn secondary" style="flex: 0 0 auto" type="button">تحديث</button>
-        </div>
-        <div id="roomsList"></div>
-      </section>
-
-      <section id="tab-banners" class="card hidden">
-        <h2>إدارة بنرات الصفحة الرئيسية</h2>
-        <p class="muted">أضف رابط صورة أو ارفع صورة إلى Firebase Storage. يمكنك تغيير ترتيب البنرات وحذفها.</p>
-        <div class="field">
-          <label for="bannerUrl">رابط الصورة</label>
-          <input id="bannerUrl" placeholder="https://... صورة مباشرة" />
-        </div>
-        <div class="field">
-          <label for="bannerFile">أو اختيار صورة من الهاتف</label>
-          <input id="bannerFile" type="file" accept="image/*" />
-        </div>
-        <button id="addBanner" class="btn" type="button">إضافة البنر</button>
-        <div id="bannerStatus" class="status"></div>
-        <div id="bannersList"></div>
-      </section>
-
-      <section id="tab-users" class="card hidden">
-        <h2>👥 إدارة المستخدمين والمعرّفات</h2>
-        <p class="muted">ابحث بالاسم أو UID أو رقم ID الحالي. يبدأ الترقيم التلقائي للمستخدمين الجدد من 1000001. يمكنك تغيير الرقم العام أو حظر/فك حظر الحساب.</p>
-        <div class="field">
-          <label for="userSearch">بحث عن مستخدم</label>
-          <input id="userSearch" placeholder="الاسم أو UID أو ID مثل 1000001" />
-        </div>
-        <button id="searchUsers" class="btn secondary" type="button">بحث / تحديث القائمة</button>
-        <div id="usersStatus" class="status"></div>
-        <div id="usersList"></div>
-        <div class="notice">تنبيه: تغيير ID هنا يغيّر الرقم الظاهر داخل التطبيق فقط (specialId)، ولا يغيّر UID الخاص بتسجيل الدخول. يجب أن يكون الرقم غير مستخدم من حساب آخر.</div>
-      </section>
-
-      <section id="tab-moderation" class="card hidden">
-        <h2>🚨 إدارة البلاغات وحظر الحسابات</h2>
-        <p class="muted">راجع البلاغات الواردة من المستخدمين، حدّث حالتها، أو قم بحظر/فك حظر أي حساب مباشرة.</p>
-
-        <div class="grid">
-          <div class="field">
-            <label for="banUidInput">UID أو ID الحساب المراد حظره أو فك حظره</label>
-            <input id="banUidInput" placeholder="الصق Firebase UID أو ID هنا" dir="ltr" />
-          </div>
-          <div class="field">
-            <label for="banReasonInput">سبب الحظر (اختياري)</label>
-            <input id="banReasonInput" maxlength="140" placeholder="مخالفة شروط الاستخدام أو الإساءة" />
-          </div>
-        </div>
-        <div class="row">
-          <button id="banUserBtn" class="btn danger" type="button">🚫 حظر الحساب</button>
-          <button id="unbanUserBtn" class="btn ok" type="button">✅ فك الحظر</button>
-        </div>
-        <div id="modStatus" class="status"></div>
-
-        <hr style="border-color: var(--line); margin: 18px 0" />
-        <div class="row">
-          <h3 style="margin: 0">البلاغات الواردة</h3>
-          <select id="reportFilter" style="flex: 0 0 180px; background: #0e1122; color: var(--txt); border: 1px solid var(--line); border-radius: 10px; padding: 8px;">
-            <option value="all">كل البلاغات</option>
-            <option value="open">قيد المراجعة</option>
-            <option value="resolved">تم التعامل</option>
-            <option value="dismissed">مرفوض</option>
-          </select>
-        </div>
-        <div id="reportsList"></div>
-      </section>
-
-      <section id="tab-settings" class="card hidden">
-        <h2>إعدادات عامة</h2>
-        <p class="muted">هذه القيم تُحفظ تحت appSettings.</p>
-        <div class="field">
-          <label for="appName">اسم التطبيق</label>
-          <input id="appName" value="REAL VOICE" />
-        </div>
-        <div class="field">
-          <label for="appNotice">رسالة/إعلان عام</label>
-          <textarea id="appNotice" placeholder="اكتب إعلاناً للمستخدمين"></textarea>
-        </div>
-        <label class="check"><input id="maintenance" type="checkbox" /> وضع الصيانة</label>
-        <button id="saveSettings" class="btn" style="margin-top: 12px" type="button">حفظ الإعدادات</button>
-        <div id="settingsStatus" class="status"></div>
-      </section>
-    </main>
-
-    <div class="footer">REAL VOICE • Admin Console</div>
+  <div id="login-view" class="wrap">
+    <div class="login-box">
+      <div class="logo" style="margin:0 auto 12px">🛡️</div>
+      <h2 style="margin:0 0 8px">لوحة إدارة REAL VOICE</h2>
+      <p class="meta" style="margin:0 0 16px">سجّل الدخول بحساب Google المعتمد كمشرف للتحكم في المستخدمين والغرف والهدايا والبلاغات.</p>
+      <div id="adm-login-error" class="notice hidden" style="background:rgba(220,38,38,.18);border-color:rgba(220,38,38,.45);color:#fecaca"></div>
+      <button class="btn" id="adm-google-login" style="width:100%" type="button">تسجيل الدخول بحساب Google</button>
+    </div>
   </div>
+
+  <div id="denied-view" class="wrap hidden">
+    <div class="login-box">
+      <h3 style="margin:0 0 8px;color:#fca5a5">⛔ صلاحية الإدارة غير مفعّلة</h3>
+      <p class="meta" id="denied-info" style="margin:0 0 14px">هذا الحساب لا يملك صلاحية <code>isAdmin</code> في قاعدة البيانات.</p>
+      <button class="btn ghost" id="adm-switch-acc" type="button">تسجيل الخروج / تغيير الحساب</button>
+    </div>
+  </div>
+
+  <div id="dash-view" class="wrap hidden">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">🛡️</div>
+        <div>
+          <div style="font-weight:900;font-size:15px">لوحة إدارة REAL VOICE</div>
+          <div class="meta" id="adm-user-label">المشرف</div>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="btn sm ghost" id="adm-refresh" type="button">↻ تحديث</button>
+        <button class="btn sm ghost" id="adm-logout" type="button">خروج</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="st-users">0</b><span>إجمالي المستخدمين</span></div>
+      <div class="stat"><b id="st-rooms">0</b><span>الغرف النشطة</span></div>
+      <div class="stat"><b id="st-reports">0</b><span>البلاغات المفتوحة</span></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="users" type="button">👥 المستخدمون</button>
+      <button class="tab" data-tab="rooms" type="button">🎙️ الغرف</button>
+      <button class="tab" data-tab="gifts" type="button">🎁 الهدايا</button>
+      <button class="tab" data-tab="reports" type="button">🚩 البلاغات</button>
+    </div>
+
+    <div id="tab-users" class="panel">
+      <div class="notice">إدارة الحسابات: حظر/فك حظر، توثيق الحساب، منح VIP، أو تعديل صلاحية الإدارة.</div>
+      <input id="u-search" class="search" placeholder="ابحث بالاسم أو رقم ID أو UID..." />
+      <div id="u-list" class="list"></div>
+    </div>
+
+    <div id="tab-rooms" class="panel hidden">
+      <div class="notice">إدارة الغرف: قفل/فتح الغرفة، ترتيب الأولوية، أو حذف غرفة مخالفة.</div>
+      <div id="r-list" class="list"></div>
+    </div>
+
+    <div id="tab-gifts" class="panel hidden">
+      <div class="notice">إدارة الهدايا: إضافة هدية جديدة أو تعديل السعر وحالة التفعيل.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <input id="g-emoji" class="search" placeholder="الإيموجي مثل 💎" style="width:120px;margin:0" />
+        <input id="g-name" class="search" placeholder="اسم الهدية" style="flex:1;min-width:140px;margin:0" />
+        <input id="g-price" class="search" type="number" placeholder="السعر" style="width:110px;margin:0" />
+        <button class="btn sm ok" id="g-add" type="button">+ إضافة هدية</button>
+      </div>
+      <div id="g-list" class="list"></div>
+    </div>
+
+    <div id="tab-reports" class="panel hidden">
+      <div id="rep-list" class="list"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
   <script>
     (function () {
-      'use strict';
+      "use strict";
 
-      const ADMIN_UID = 'MDdaKOJ4CLNrwRizr2jZUbHfGDb2';
-      const ECONOMY_BASE_URL = 'https://us-central1-real-voice-aec71.cloudfunctions.net';
-      const firebaseConfig = {
-        apiKey: 'AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4',
-        authDomain: 'real-voice-aec71.firebaseapp.com',
-        databaseURL: 'https://real-voice-aec71-default-rtdb.firebaseio.com',
-        projectId: 'real-voice-aec71',
-        storageBucket: 'real-voice-aec71.firebasestorage.app',
-        messagingSenderId: '1051527775983',
-        appId: '1:1051527775983:web:ae3794c162184fd56b7d1a'
+      var firebaseConfig = {
+        apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
+        authDomain: "real-voice-aec71.firebaseapp.com",
+        databaseURL: "https://real-voice-aec71-default-rtdb.firebaseio.com",
+        projectId: "real-voice-aec71",
+        storageBucket: "real-voice-aec71.firebasestorage.app",
+        messagingSenderId: "1051527775983",
+        appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
       };
 
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-      }
+      var app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+      var auth = firebase.auth(app);
+      var db = firebase.database(app);
 
-      const auth = firebase.auth();
-      const db = firebase.database();
-      const storage = firebase.storage();
+      var state = {
+        me: null,
+        tab: "users",
+        users: [],
+        rooms: [],
+        gifts: [],
+        reports: []
+      };
 
-      let currentUser = null;
-      let rooms = {};
-      let banners = [];
-      let editingId = null;
-      let usersMap = {};
-      let profilesMap = {};
-      let reportsMap = {};
-      let dbListeners = [];
-      let isLoaded = false;
-
-      const $ = (id) => document.getElementById(id);
-      const safe = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[c]));
-
-      function isSafeUrl(u) {
-        return /^https?:\/\//i.test(String(u || '').trim());
-      }
-
-      function status(id, msg, ok = false) {
-        const el = $(id);
-        if (!el) return;
-        el.textContent = msg;
-        el.className = 'status ' + (ok ? 'good' : 'error');
-      }
-
-      function slug() {
-        return 'r' + Math.random().toString(36).slice(2, 9);
-      }
-
-      function detachListeners() {
-        dbListeners.forEach(({ ref, event, cb }) => {
-          try { ref.off(event, cb); } catch (_) {}
+      function $(id) { return document.getElementById(id); }
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
         });
-        dbListeners = [];
-        isLoaded = false;
+      }
+      function toast(msg) {
+        var t = $("toast");
+        if (!t) return;
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(function () { t.classList.remove("show"); }, 2400);
+      }
+      function setLoginError(msg) {
+        var box = $("adm-login-error");
+        if (!box) return;
+        if (msg) { box.textContent = msg; box.classList.remove("hidden"); }
+        else { box.textContent = ""; box.classList.add("hidden"); }
       }
 
-      function listenRef(path, cb) {
-        const ref = db.ref(path);
-        ref.on('value', cb);
-        dbListeners.push({ ref, event: 'value', cb });
-      }
-
-      function showPanel() {
-        $('login').classList.add('hidden');
-        $('panel').classList.remove('hidden');
-        $('logout').classList.remove('hidden');
-        $('who').textContent = currentUser.email || currentUser.uid;
-        status('loginStatus', '', true);
-        loadAll();
-      }
-
-      $('loginBtn').onclick = () => {
-        status('loginStatus', 'جاري فتح تسجيل الدخول…', true);
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        auth.signInWithRedirect(provider).catch((e) => status('loginStatus', e.message || 'تعذر تسجيل الدخول'));
-      };
-
-      auth.getRedirectResult().catch((e) => {
-        if (e && e.message) status('loginStatus', e.message);
-      });
-
-      auth.onAuthStateChanged(async (u) => {
-        if (!u) {
-          currentUser = null;
-          detachListeners();
-          $('login').classList.remove('hidden');
-          $('panel').classList.add('hidden');
-          $('logout').classList.add('hidden');
-          $('who').textContent = '';
-          return;
-        }
-        currentUser = u;
-        if (u.uid !== ADMIN_UID) {
-          detachListeners();
-          await auth.signOut();
-          status('loginStatus', 'هذا الحساب غير مصرح له بإدارة REAL VOICE. استخدم حساب المدير المعتمد.');
-          return;
-        }
-        showPanel();
-      });
-
-      $('logout').onclick = () => {
-        detachListeners();
-        auth.signOut().catch((e) => status('loginStatus', e.message || 'تعذر تسجيل الخروج'));
-      };
-
-      function loadAll() {
-        if (isLoaded) return;
-        isLoaded = true;
-
-        listenRef('rooms', (s) => {
-          rooms = s.val() || {};
-          renderRooms();
-          $('roomCount').textContent = String(Object.keys(rooms).length);
-        });
-
-        listenRef('banners', (s) => {
-          const v = s.val() || [];
-          banners = Array.isArray(v)
-            ? v.filter(Boolean)
-            : Object.keys(v).sort().map((k) => v[k]).filter(Boolean);
-          renderBanners();
-          $('bannerCount').textContent = String(banners.length);
-        });
-
-        listenRef('publicProfiles', (s) => {
-          profilesMap = s.val() || {};
-          $('userCount').textContent = String(Object.keys(profilesMap).length);
-          renderUsers();
-          renderReports();
-        });
-
-        listenRef('users', (s) => {
-          usersMap = s.val() || {};
-          renderUsers();
-          renderReports();
-        });
-
-        listenRef('reports', (s) => {
-          reportsMap = s.val() || {};
-          const openCount = Object.values(reportsMap).filter((r) => (r && r.status) === 'open' || !(r && r.status)).length;
-          $('reportCount').textContent = String(openCount);
-          renderReports();
-        });
-
-        db.ref('appSettings').once('value').then((s) => {
-          const v = s.val() || {};
-          $('appName').value = v.appName || 'REAL VOICE';
-          $('appNotice').value = v.notice || '';
-          $('maintenance').checked = !!v.maintenance;
-        }).catch(() => {});
-      }
-
-      const CAT_LABELS = {
-        chat: 'دردشة',
-        games: 'ألعاب',
-        vip: 'VIP',
-        music: 'موسيقى',
-        friends: 'أصدقاء'
-      };
-
-      function renderRooms() {
-        const arr = Object.keys(rooms)
-          .map((id) => ({ id, ...(rooms[id] || {}) }))
-          .sort((a, b) => (Number(a.adminOrder ?? 1000) - Number(b.adminOrder ?? 1000)) || ((b.created || 0) - (a.created || 0)));
-
-        $('roomsList').innerHTML = arr.length
-          ? arr.map((r) => {
-              const photoHtml = isSafeUrl(r.roomPhoto)
-                ? `<img class="thumb" src="${safe(r.roomPhoto)}" alt="" />`
-                : `<div class="thumb"></div>`;
-              const seatsNum = r.seatCount || (Array.isArray(r.seats) ? r.seats.length : 9);
-              return `<div class="item">
-                ${photoHtml}
-                <div class="info">
-                  <b>${safe(r.name || 'غرفة')}</b>
-                  <small>${safe(CAT_LABELS[r.cat] || r.cat || 'دردشة')} • ترتيب ${Number(r.adminOrder ?? 1000)} • ${seatsNum} مقاعد${r.priv ? ' • خاصة' : ''}</small>
-                </div>
-                <div class="actions">
-                  <button type="button" data-edit="${safe(r.id)}">تعديل</button>
-                  <button type="button" data-up="${safe(r.id)}">↑</button>
-                  <button type="button" data-down="${safe(r.id)}">↓</button>
-                  <button type="button" class="del" data-del="${safe(r.id)}">حذف</button>
-                </div>
-              </div>`;
-            }).join('')
-          : '<p class="muted">لا توجد غرف حتى الآن.</p>';
-      }
-
-      function resetRoom() {
-        editingId = null;
-        ['rName', 'rDesc', 'rPhoto', 'rPass'].forEach((id) => { $(id).value = ''; });
-        $('rCat').value = 'chat';
-        $('rSeats').value = '9';
-        $('rOrder').value = '100';
-        $('rPrivate').checked = false;
-        $('rApproval').checked = false;
-        $('passWrap').classList.add('hidden');
-        $('saveRoom').textContent = '➕ إضافة الغرفة';
-        $('cancelEdit').classList.add('hidden');
-      }
-
-      $('rPrivate').onchange = () => $('passWrap').classList.toggle('hidden', !$('rPrivate').checked);
-      $('cancelEdit').onclick = resetRoom;
-
-      $('saveRoom').onclick = async () => {
-        if (!currentUser || currentUser.uid !== ADMIN_UID) return;
-        const name = $('rName').value.trim();
-        if (!name) return status('roomStatus', 'اكتب اسم الغرفة');
-
-        const id = editingId || slug();
-        const prev = rooms[id] || {};
-        const priv = $('rPrivate').checked;
-        const pass = $('rPass').value.trim();
-        if (priv && !pass && !prev.passcode) return status('roomStatus', 'اكتب كلمة مرور الغرفة الخاصة');
-
-        const n = Number($('rSeats').value) || 9;
-        const photoVal = $('rPhoto').value.trim();
-        if (photoVal && !isSafeUrl(photoVal)) return status('roomStatus', 'رابط صورة الغرفة يجب أن يبدأ بـ http أو https');
-
-        const data = {
-          name,
-          desc: $('rDesc').value.trim(),
-          cat: $('rCat').value,
-          seatCount: n,
-          adminOrder: Number.isFinite(Number($('rOrder').value)) ? Number($('rOrder').value) : 100,
-          roomPhoto: photoVal,
-          priv,
-          passcode: priv ? (pass || prev.passcode || '') : '',
-          micApprovalMode: $('rApproval').checked,
-          created: prev.created || firebase.database.ServerValue.TIMESTAMP
-        };
-        if (!prev.owner) data.owner = currentUser.uid;
-        if (!Array.isArray(prev.seats) || !prev.seats.length) {
-          data.seats = Array.from({ length: n }, (_, i) => ({ uid: null, locked: false, muted: false, vip: i === 0 }));
-        }
-
-        const btn = $('saveRoom');
-        btn.disabled = true;
-        try {
-          await db.ref('rooms/' + id).update(data);
-          status('roomStatus', 'تم حفظ الغرفة بنجاح ✅', true);
-          resetRoom();
-        } catch (e) {
-          status('roomStatus', 'فشل الحفظ: ' + (e.message || e));
-        } finally {
-          btn.disabled = false;
-        }
-      };
-
-      $('roomsList').onclick = async (e) => {
-        const b = e.target.closest('button');
-        if (!b) return;
-        const id = b.dataset.edit || b.dataset.del || b.dataset.up || b.dataset.down;
-        if (!id || !rooms[id]) return;
-        const r = rooms[id];
-
-        try {
-          if (b.dataset.edit) {
-            editingId = id;
-            $('rName').value = r.name || '';
-            $('rDesc').value = r.desc || '';
-            $('rCat').value = r.cat || 'chat';
-            $('rSeats').value = String(r.seatCount || (Array.isArray(r.seats) ? r.seats.length : 9));
-            $('rPhoto').value = r.roomPhoto || '';
-            $('rOrder').value = String(Number(r.adminOrder ?? 100));
-            $('rPrivate').checked = !!r.priv;
-            $('rPass').value = '';
-            $('passWrap').classList.toggle('hidden', !r.priv);
-            $('rApproval').checked = !!r.micApprovalMode;
-            $('saveRoom').textContent = '💾 حفظ التعديلات';
-            $('cancelEdit').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-          }
-
-          if (b.dataset.del) {
-            if (!confirm('متأكد من حذف الغرفة نهائياً؟')) return;
-            await db.ref('rooms/' + id).remove();
-            if (r.owner) {
-              await db.ref('userRoomIndex/' + r.owner).transaction((curr) => (curr === id ? null : curr)).catch(() => {});
-            }
-            if (editingId === id) resetRoom();
-            status('roomStatus', 'تم حذف الغرفة ✅', true);
-            return;
-          }
-
-          const arr = Object.keys(rooms)
-            .map((k) => ({ id: k, o: Number(rooms[k].adminOrder ?? 1000) }))
-            .sort((a, b) => a.o - b.o);
-          const i = arr.findIndex((x) => x.id === id);
-          const j = i + (b.dataset.up ? -1 : 1);
-          if (i < 0 || j < 0 || j >= arr.length) return;
-          const moved = arr.splice(i, 1)[0];
-          arr.splice(j, 0, moved);
-          const updates = {};
-          arr.forEach((x, idx) => { updates['rooms/' + x.id + '/adminOrder'] = (idx + 1) * 10; });
-          await db.ref().update(updates);
-        } catch (err) {
-          status('roomStatus', 'تعذر تنفيذ العملية: ' + (err.message || err));
-        }
-      };
-
-      $('reloadRooms').onclick = () => {
-        db.ref('rooms').once('value').then((s) => {
-          rooms = s.val() || {};
-          renderRooms();
-          status('roomStatus', 'تم تحديث قائمة الغرف ✅', true);
-        }).catch((e) => status('roomStatus', e.message || 'تعذر التحديث'));
-      };
-
-      $('addBanner').onclick = async () => {
-        if (!currentUser || currentUser.uid !== ADMIN_UID) return;
-        const btn = $('addBanner');
-        btn.disabled = true;
-        try {
-          let url = $('bannerUrl').value.trim();
-          const f = $('bannerFile').files && $('bannerFile').files[0];
-          if (f) {
-            if (!/^image\//i.test(f.type)) throw new Error('اختر ملف صورة صحيح');
-            if (f.size > 5 * 1024 * 1024) throw new Error('حجم الصورة أكبر من 5 ميجابايت');
-            const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const path = 'admin/banners/' + Date.now() + '_' + safeName;
-            const ref = storage.ref(path);
-            await ref.put(f);
-            url = await ref.getDownloadURL();
-          }
-          if (!url || !isSafeUrl(url)) throw new Error('أضف رابط صورة صحيح يبدأ بـ http أو https أو اختر صورة من الهاتف');
-          const nextBanners = [...banners, url];
-          await db.ref('banners').set(nextBanners);
-          $('bannerUrl').value = '';
-          $('bannerFile').value = '';
-          status('bannerStatus', 'تمت إضافة البنر ✅', true);
-        } catch (e) {
-          status('bannerStatus', 'تعذر إضافة البنر: ' + (e.message || e));
-        } finally {
-          btn.disabled = false;
-        }
-      };
-
-      function renderBanners() {
-        $('bannersList').innerHTML = banners.length
-          ? banners.map((url, i) => {
-              const imgHtml = isSafeUrl(url) ? `<img class="thumb" src="${safe(url)}" alt="بنر" />` : `<div class="thumb"></div>`;
-              return `<div class="item">
-                ${imgHtml}
-                <div class="info">
-                  <b>بنر ${i + 1}</b>
-                  <small>${safe(String(url).slice(0, 75))}</small>
-                </div>
-                <div class="actions">
-                  <button type="button" data-bup="${i}">↑</button>
-                  <button type="button" data-bdown="${i}">↓</button>
-                  <button type="button" class="del" data-bdel="${i}">حذف</button>
-                </div>
-              </div>`;
-            }).join('')
-          : '<p class="muted">لا توجد بنرات.</p>';
-      }
-
-      $('bannersList').onclick = async (e) => {
-        const b = e.target.closest('button');
-        if (!b) return;
-        const idxAttr = b.dataset.bup ?? b.dataset.bdown ?? b.dataset.bdel;
-        const i = Number(idxAttr);
-        if (!Number.isInteger(i) || i < 0 || i >= banners.length) return;
-
-        const next = banners.slice();
-        if (b.dataset.bdel !== undefined) {
-          if (!confirm('حذف هذا البنر؟')) return;
-          next.splice(i, 1);
-        } else {
-          const j = i + (b.dataset.bup !== undefined ? -1 : 1);
-          if (j < 0 || j >= next.length) return;
-          [next[i], next[j]] = [next[j], next[i]];
-        }
-
-        try {
-          await db.ref('banners').set(next);
-          status('bannerStatus', 'تم تحديث البنرات ✅', true);
-        } catch (err) {
-          status('bannerStatus', 'تعذر تحديث البنرات: ' + (err.message || err));
-        }
-      };
-
-      $('saveSettings').onclick = async () => {
-        if (!currentUser || currentUser.uid !== ADMIN_UID) return;
-        const btn = $('saveSettings');
-        btn.disabled = true;
-        try {
-          await db.ref('appSettings').update({
-            appName: $('appName').value.trim() || 'REAL VOICE',
-            notice: $('appNotice').value.trim(),
-            maintenance: !!$('maintenance').checked,
-            updatedAt: firebase.database.ServerValue.TIMESTAMP
-          });
-          status('settingsStatus', 'تم حفظ الإعدادات بنجاح ✅', true);
-        } catch (e) {
-          status('settingsStatus', 'فشل الحفظ: ' + (e.message || e));
-        } finally {
-          btn.disabled = false;
-        }
-      };
-
-      function allUsers() {
-        const ids = new Set([...Object.keys(usersMap || {}), ...Object.keys(profilesMap || {})]);
-        return [...ids].map((uid) => ({
-          ...(usersMap[uid] || {}),
-          ...(profilesMap[uid] || {}),
-          uid
-        }));
-      }
-
-      function findUidByAnyId(rawId) {
-        const cleanVal = String(rawId || '').trim();
-        if (!cleanVal) return null;
-        const list = allUsers();
-        const found = list.find((u) => u.uid === cleanVal || String(u.specialId || '').trim() === cleanVal || String(u.id || '').trim() === cleanVal);
-        return found ? found.uid : cleanVal;
-      }
-
-      async function setUserBan(uidOrId, banned, reason = '') {
-        const cleanUid = findUidByAnyId(uidOrId);
-        if (!cleanUid) throw new Error('اكتب UID أو ID الحساب');
-        if (cleanUid === ADMIN_UID) throw new Error('لا يمكن حظر حساب المدير');
-
-        const updates = {
-          ['users/' + cleanUid + '/banned']: !!banned,
-          ['publicProfiles/' + cleanUid + '/banned']: !!banned,
-          ['users/' + cleanUid + '/banReason']: banned ? String(reason || '').trim() : '',
-          ['publicProfiles/' + cleanUid + '/banReason']: banned ? String(reason || '').trim() : '',
-          ['users/' + cleanUid + '/bannedAt']: banned ? firebase.database.ServerValue.TIMESTAMP : null
-        };
-        await db.ref().update(updates);
+      function renderStats() {
+        $("st-users").textContent = String(state.users.length);
+        $("st-rooms").textContent = String(state.rooms.length);
+        var openReps = state.reports.filter(function (r) { return r.status !== "closed"; }).length;
+        $("st-reports").textContent = String(openReps);
       }
 
       function renderUsers() {
-        const q = ($('userSearch').value || '').trim().toLowerCase();
-        const arr = allUsers().filter((u) => {
+        var q = (($("u-search") && $("u-search").value) || "").trim().toLowerCase();
+        var list = state.users.filter(function (u) {
           if (!q) return true;
-          return [u.uid, u.name, u.username, u.specialId, u.email]
-            .some((v) => String(v || '').toLowerCase().includes(q));
-        }).slice(0, 100);
-
-        $('usersList').innerHTML = arr.length
-          ? arr.map((u) => {
-              const photoHtml = isSafeUrl(u.photo)
-                ? `<img class="thumb" src="${safe(u.photo)}" alt="" />`
-                : `<div class="thumb"></div>`;
-              const isBanned = !!u.banned;
-              const banBadge = isBanned ? '<span class="badge ban">محظور</span>' : '';
-              return `<div class="item">
-                ${photoHtml}
-                <div class="info">
-                  <b>${safe(u.name || u.username || 'مستخدم')}${banBadge}</b>
-                  <small>UID: ${safe(u.uid)}<br>ID الحالي: ${safe(u.specialId || 'غير محدد')}${u.banReason ? '<br>سبب الحظر: ' + safe(u.banReason) : ''}</small>
-                  <div class="field">
-                    <input data-newid="${safe(u.uid)}" inputmode="numeric" maxlength="7" pattern="[0-9]{7}" placeholder="ID جديد من 7 أرقام" value="" />
-                  </div>
-                  <div class="actions">
-                    <button class="btn" type="button" data-saveid="${safe(u.uid)}">حفظ ID</button>
-                    <button class="${isBanned ? 'ok' : 'del'}" type="button" data-toggleban="${safe(u.uid)}" data-banstate="${isBanned ? '1' : '0'}">${isBanned ? 'فك الحظر' : 'حظر الحساب'}</button>
-                  </div>
-                </div>
-              </div>`;
-            }).join('')
-          : '<p class="muted">لا توجد نتائج. جرّب البحث بالـ UID أو الاسم.</p>';
+          return String(u.name || "").toLowerCase().indexOf(q) >= 0 ||
+            String(u.specialId || "").toLowerCase().indexOf(q) >= 0 ||
+            String(u.id || "").toLowerCase().indexOf(q) >= 0;
+        });
+        $("u-list").innerHTML = list.length ? list.map(function (u) {
+          var banned = !!u.banned;
+          var verified = !!u.verified;
+          var vip = Number(u.vip || 0);
+          return '<div class="row">' +
+            '<div>' +
+              '<div class="name">' + esc(u.name || "مستخدم") +
+                ' <span class="tag">ID: ' + esc(u.specialId || "—") + '</span>' +
+                (verified ? ' <span class="tag ok">✓ موثق</span>' : '') +
+                (vip > 0 ? ' <span class="tag gold">VIP ' + vip + '</span>' : '') +
+                (banned ? ' <span class="tag bad">محظور</span>' : '') +
+              '</div>' +
+              '<div class="meta">UID: ' + esc(u.id) + '</div>' +
+            '</div>' +
+            '<div class="acts">' +
+              '<button class="btn sm ' + (banned ? "ok" : "red") + '" data-ub="' + esc(u.id) + '" data-val="' + (!banned) + '" type="button">' + (banned ? "فك الحظر" : "حظر") + '</button>' +
+              '<button class="btn sm ghost" data-uv="' + esc(u.id) + '" data-val="' + (!verified) + '" type="button">' + (verified ? "إلغاء التوثيق" : "توثيق") + '</button>' +
+              '<button class="btn sm gold" data-uvip="' + esc(u.id) + '" type="button">VIP</button>' +
+            '</div>' +
+          '</div>';
+        }).join("") : '<div class="empty">لا يوجد مستخدمون</div>';
       }
 
-      $('searchUsers').onclick = renderUsers;
-      $('userSearch').addEventListener('input', renderUsers);
+      function renderRooms() {
+        $("r-list").innerHTML = state.rooms.length ? state.rooms.map(function (r) {
+          var locked = !!r.locked;
+          return '<div class="row">' +
+            '<div>' +
+              '<div class="name">' + esc(r.name || "غرفة") + ' <span class="tag">أولوية: ' + Number(r.adminOrder || 1000) + '</span>' + (locked ? ' <span class="tag bad">مقفلة</span>' : '') + '</div>' +
+              '<div class="meta">ID الغرفة: ' + esc(r.id) + ' • المالك: ' + esc(r.owner || "—") + '</div>' +
+            '</div>' +
+            '<div class="acts">' +
+              '<button class="btn sm ghost" data-rord="' + esc(r.id) + '" type="button">ترتيب</button>' +
+              '<button class="btn sm ' + (locked ? "ok" : "ghost") + '" data-rlock="' + esc(r.id) + '" data-val="' + (!locked) + '" type="button">' + (locked ? "فتح الغرفة" : "قفل الغرفة") + '</button>' +
+              '<button class="btn sm red" data-rdel="' + esc(r.id) + '" type="button">حذف</button>' +
+            '</div>' +
+          '</div>';
+        }).join("") : '<div class="empty">لا توجد غرف</div>';
+      }
 
-      $('usersList').onclick = async (e) => {
-        const banBtn = e.target.closest('[data-toggleban]');
-        if (banBtn && currentUser && currentUser.uid === ADMIN_UID) {
-          const uid = banBtn.dataset.toggleban;
-          const currentlyBanned = banBtn.dataset.banstate === '1';
-          const nextState = !currentlyBanned;
-          const reason = nextState ? (prompt('سبب الحظر (اختياري):') || '') : '';
-          if (!confirm(nextState ? 'تأكيد حظر هذا الحساب؟' : 'تأكيد فك الحظر عن هذا الحساب؟')) return;
-
-          banBtn.disabled = true;
-          try {
-            await setUserBan(uid, nextState, reason);
-            status('usersStatus', nextState ? 'تم حظر الحساب ✅' : 'تم فك الحظر عن الحساب ✅', true);
-          } catch (err) {
-            status('usersStatus', 'تعذر تحديث حالة الحظر: ' + (err.message || err));
-          } finally {
-            banBtn.disabled = false;
-          }
-          return;
-        }
-
-        const b = e.target.closest('[data-saveid]');
-        if (!b || !currentUser || currentUser.uid !== ADMIN_UID) return;
-        const uid = b.dataset.saveid;
-        const inputs = $('usersList').querySelectorAll('input[data-newid]');
-        let input = null;
-        for (const el of inputs) {
-          if (el.getAttribute('data-newid') === uid) {
-            input = el;
-            break;
-          }
-        }
-        const newId = (input ? input.value : '').trim();
-        if (!/^\d{7}$/.test(newId)) {
-          return status('usersStatus', 'اكتب ID مكوّناً من 7 أرقام بالضبط، مثل 1000001');
-        }
-        if (!confirm('تأكيد تغيير ID لهذا المستخدم إلى ' + newId + '؟')) return;
-
-        b.disabled = true;
-        try {
-          const dup = await db.ref('publicProfiles').orderByChild('specialId').equalTo(newId).once('value');
-          const found = dup.val() || {};
-          if (Object.keys(found).some((k) => k !== uid)) {
-            return status('usersStatus', 'هذا الـ ID مستخدم بالفعل بواسطة حساب آخر.');
-          }
-          const updates = {};
-          updates['users/' + uid + '/specialId'] = newId;
-          updates['publicProfiles/' + uid + '/specialId'] = newId;
-          await db.ref().update(updates);
-          if (input) input.value = '';
-          status('usersStatus', 'تم تغيير ID المستخدم إلى ' + newId + ' بنجاح ✅', true);
-          renderUsers();
-        } catch (err) {
-          status('usersStatus', 'تعذر تغيير ID: ' + (err.message || err));
-        } finally {
-          b.disabled = false;
-        }
-      };
-
-      $('banUserBtn').onclick = async () => {
-        if (!currentUser || currentUser.uid !== ADMIN_UID) return;
-        const uid = $('banUidInput').value.trim();
-        const reason = $('banReasonInput').value.trim();
-        if (!uid) return status('modStatus', 'اكتب UID أو ID الحساب أولاً');
-        if (!confirm('تأكيد حظر الحساب ' + uid + '؟')) return;
-
-        $('banUserBtn').disabled = true;
-        try {
-          await setUserBan(uid, true, reason);
-          status('modStatus', 'تم حظر الحساب بنجاح ✅', true);
-        } catch (e) {
-          status('modStatus', 'تعذر الحظر: ' + (e.message || e));
-        } finally {
-          $('banUserBtn').disabled = false;
-        }
-      };
-
-      $('unbanUserBtn').onclick = async () => {
-        if (!currentUser || currentUser.uid !== ADMIN_UID) return;
-        const uid = $('banUidInput').value.trim();
-        if (!uid) return status('modStatus', 'اكتب UID أو ID الحساب أولاً');
-        if (!confirm('تأكيد فك الحظر عن الحساب ' + uid + '؟')) return;
-
-        $('unbanUserBtn').disabled = true;
-        try {
-          await setUserBan(uid, false, '');
-          status('modStatus', 'تم فك الحظر بنجاح ✅', true);
-        } catch (e) {
-          status('modStatus', 'تعذر فك الحظر: ' + (e.message || e));
-        } finally {
-          $('unbanUserBtn').disabled = false;
-        }
-      };
-
-      const STATUS_LABELS = {
-        open: ['قيد المراجعة', 'open'],
-        resolved: ['تم التعامل', 'done'],
-        dismissed: ['مرفوض', 'ban']
-      };
-
-      function getUserLabel(uid) {
-        if (!uid) return 'غير محدد';
-        const u = { ...(usersMap[uid] || {}), ...(profilesMap[uid] || {}) };
-        const name = u.name || u.username || '';
-        return name ? `${name} (${uid})` : uid;
+      function renderGifts() {
+        $("g-list").innerHTML = state.gifts.length ? state.gifts.map(function (g) {
+          return '<div class="row">' +
+            '<div>' +
+              '<div class="name">' + esc(g.e || "🎁") + ' ' + esc(g.n || "هدية") + ' <span class="tag gold">' + Number(g.p || 0) + ' 🪙</span></div>' +
+              '<div class="meta">ID: ' + esc(g.id) + '</div>' +
+            '</div>' +
+            '<div class="acts">' +
+              '<button class="btn sm red" data-gdel="' + esc(g.id) + '" type="button">حذف</button>' +
+            '</div>' +
+          '</div>';
+        }).join("") : '<div class="empty">لا توجد هدايا مضافة في قاعدة البيانات</div>';
       }
 
       function renderReports() {
-        const filter = $('reportFilter') ? $('reportFilter').value : 'all';
-        const list = Object.keys(reportsMap || {})
-          .map((id) => ({ id, ...(reportsMap[id] || {}) }))
-          .filter((r) => {
-            const st = r.status || 'open';
-            return filter === 'all' || st === filter;
-          })
-          .sort((a, b) => (b.createdAt || b.created || 0) - (a.createdAt || a.created || 0));
-
-        $('reportsList').innerHTML = list.length
-          ? list.map((r) => {
-              const st = r.status || 'open';
-              const [label, cls] = STATUS_LABELS[st] || ['قيد المراجعة', 'open'];
-              const targetUid = r.targetUid || r.reportedUid || r.uid || '';
-              const reporterUid = r.reporterUid || r.fromUid || '';
-              const dateStr = r.createdAt ? new Date(Number(r.createdAt)).toLocaleString('ar-EG') : '';
-
-              return `<div class="item">
-                <div class="info">
-                  <b>بلاغ #${safe(r.id)} <span class="badge ${cls}">${label}</span></b>
-                  <small>المُبلَّغ عنه: ${safe(getUserLabel(targetUid))}<br>المُبلِّغ: ${safe(getUserLabel(reporterUid))}<br>السبب: ${safe(r.reason || r.details || r.message || 'غير مذكور')}${dateStr ? '<br>التاريخ: ' + safe(dateStr) : ''}</small>
-                </div>
-                <div class="actions">
-                  ${targetUid ? `<button type="button" class="del" data-rban="${safe(targetUid)}">حظر المبلَّغ عنه</button>` : ''}
-                  <button type="button" class="ok" data-rstatus="${safe(r.id)}" data-st="resolved">تم التعامل</button>
-                  <button type="button" data-rstatus="${safe(r.id)}" data-st="dismissed">رفض</button>
-                  <button type="button" class="del" data-rdel="${safe(r.id)}">حذف</button>
-                </div>
-              </div>`;
-            }).join('')
-          : '<p class="muted">لا توجد بلاغات مطابقة للفلتر الحالي.</p>';
+        $("rep-list").innerHTML = state.reports.length ? state.reports.map(function (rp) {
+          var closed = rp.status === "closed";
+          return '<div class="row">' +
+            '<div>' +
+              '<div class="name">بلاغ ضد: ' + esc(rp.targetName || rp.targetId) + ' <span class="tag ' + (closed ? "ok" : "bad") + '">' + (closed ? "مغلق" : "مفتوح") + '</span></div>' +
+              '<div class="meta">السبب: ' + esc(rp.reason || "—") + ' • المبلغ: ' + esc(rp.reporterName || rp.reporterId) + '</div>' +
+            '</div>' +
+            '<div class="acts">' +
+              (!closed ? '<button class="btn sm ok" data-repclose="' + esc(rp.id) + '" type="button">إغلاق البلاغ</button>' : '') +
+            '</div>' +
+          '</div>';
+        }).join("") : '<div class="empty">لا توجد بلاغات</div>';
       }
 
-      $('reportFilter').onchange = renderReports;
-
-      $('reportsList').onclick = async (e) => {
-        const b = e.target.closest('button');
-        if (!b || !currentUser || currentUser.uid !== ADMIN_UID) return;
-
+      async function loadAllAdminData() {
         try {
-          if (b.dataset.rban) {
-            const uid = b.dataset.rban;
-            if (!confirm('حظر الحساب ' + uid + ' بناءً على البلاغ؟')) return;
-            await setUserBan(uid, true, 'مخالفة تم الإبلاغ عنها');
-            status('modStatus', 'تم حظر الحساب المبلَّغ عنه ✅', true);
-            return;
-          }
+          var snaps = await Promise.all([
+            db.ref("publicProfiles").once("value"),
+            db.ref("rooms").once("value"),
+            db.ref("gifts").once("value"),
+            db.ref("reports").once("value")
+          ]);
+          var pVal = snaps[0].val() || {};
+          state.users = Object.keys(pVal).map(function (k) { return Object.assign({ id: k }, pVal[k]); });
 
-          if (b.dataset.rstatus) {
-            const id = b.dataset.rstatus;
-            const st = b.dataset.st;
-            await db.ref('reports/' + id).update({
-              status: st,
-              reviewedAt: firebase.database.ServerValue.TIMESTAMP,
-              reviewedBy: currentUser.uid
-            });
-            status('modStatus', 'تم تحديث حالة البلاغ ✅', true);
-            return;
-          }
+          var rVal = snaps[1].val() || {};
+          state.rooms = Object.keys(rVal).map(function (k) { return Object.assign({ id: k }, rVal[k]); });
 
-          if (b.dataset.rdel) {
-            const id = b.dataset.rdel;
-            if (!confirm('حذف هذا البلاغ نهائياً؟')) return;
-            await db.ref('reports/' + id).remove();
-            status('modStatus', 'تم حذف البلاغ ✅', true);
-          }
-        } catch (err) {
-          status('modStatus', 'تعذر تنفيذ العملية: ' + (err.message || err));
+          var gVal = snaps[2].val() || {};
+          state.gifts = Object.keys(gVal).map(function (k) { return Object.assign({ id: k }, gVal[k]); });
+
+          var repVal = snaps[3].val() || {};
+          state.reports = Object.keys(repVal).map(function (k) { return Object.assign({ id: k }, repVal[k]); }).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+
+          renderStats();
+          renderUsers();
+          renderRooms();
+          renderGifts();
+          renderReports();
+        } catch (e) {
+          toast("تعذر تحميل بيانات الإدارة: " + (e.message || ""));
         }
-      };
-      document.querySelectorAll('.tab').forEach((b) => {
-        b.onclick = () => {
-          document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x === b));
-          ['rooms', 'banners', 'users', 'moderation', 'settings'].forEach((t) => {
-            $('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab);
+      }
+
+      async function loginWithGoogle() {
+        setLoginError("");
+        try {
+          var provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: "select_account" });
+          await auth.signInWithPopup(provider);
+        } catch (e) {
+          if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) {
+            var providerRedir = new firebase.auth.GoogleAuthProvider();
+            providerRedir.setCustomParameters({ prompt: "select_account" });
+            await auth.signInWithRedirect(providerRedir);
+            return;
+          }
+          setLoginError("تعذر تسجيل الدخول: " + (e && e.message ? e.message : "خطأ غير معروف"));
+        }
+      }
+
+      $("adm-google-login").onclick = loginWithGoogle;
+      $("adm-logout").onclick = function () { auth.signOut(); };
+      $("adm-switch-acc").onclick = function () { auth.signOut(); };
+      $("adm-refresh").onclick = loadAllAdminData;
+      if ($("u-search")) $("u-search").oninput = renderUsers;
+
+      document.querySelectorAll(".tabs .tab").forEach(function (t) {
+        t.onclick = function () {
+          state.tab = t.getAttribute("data-tab");
+          document.querySelectorAll(".tabs .tab").forEach(function (x) { x.classList.toggle("active", x === t); });
+          ["users", "rooms", "gifts", "reports"].forEach(function (sec) {
+            $("tab-" + sec).classList.toggle("hidden", state.tab !== sec);
           });
         };
+      });
+
+      $("g-add").onclick = async function () {
+        var em = ($("g-emoji").value || "").trim();
+        var nm = ($("g-name").value || "").trim();
+        var pr = Math.max(1, Number($("g-price").value || 0));
+        if (!em || !nm || !pr) { toast("أدخل الإيموجي والاسم والسعر"); return; }
+        var id = "g_" + Date.now().toString(36);
+        await db.ref("gifts/" + id).set({ id: id, e: em, n: nm, p: pr, vipMin: 0 });
+        $("g-emoji").value = ""; $("g-name").value = ""; $("g-price").value = "";
+        toast("تمت إضافة الهدية ✅");
+        loadAllAdminData();
+      };
+
+      document.addEventListener("click", async function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        if (b.hasAttribute("data-ub")) {
+          var uid = b.getAttribute("data-ub"), val = b.getAttribute("data-val") === "true";
+          await db.ref("users/" + uid + "/banned").set(val);
+          await db.ref("publicProfiles/" + uid + "/banned").set(val);
+          toast(val ? "تم حظر المستخدم" : "تم فك الحظر");
+          loadAllAdminData();
+        } else if (b.hasAttribute("data-uv")) {
+          var uidV = b.getAttribute("data-uv"), valV = b.getAttribute("data-val") === "true";
+          await db.ref("users/" + uidV + "/verified").set(valV);
+          await db.ref("publicProfiles/" + uidV + "/verified").set(valV);
+          toast("تم تحديث حالة التوثيق");
+          loadAllAdminData();
+        } else if (b.hasAttribute("data-uvip")) {
+          var uidVip = b.getAttribute("data-uvip");
+          var lv = prompt("أدخل مستوى VIP (0 - 3):", "1");
+          if (lv !== null) {
+            var numLv = Math.max(0, Math.min(3, Number(lv || 0)));
+            await db.ref("users/" + uidVip + "/vip").set(numLv);
+            await db.ref("publicProfiles/" + uidVip + "/vip").set(numLv);
+            toast("تم تحديث VIP إلى " + numLv);
+            loadAllAdminData();
+          }
+        } else if (b.hasAttribute("data-rord")) {
+          var ridO = b.getAttribute("data-rord");
+          var ord = prompt("أدخل رقم الأولوية (رقم أقل = أعلى):", "10");
+          if (ord !== null) {
+            await db.ref("rooms/" + ridO + "/adminOrder").set(Number(ord || 1000));
+            toast("تم تحديث ترتيب الغرفة");
+            loadAllAdminData();
+          }
+        } else if (b.hasAttribute("data-rlock")) {
+          var ridL = b.getAttribute("data-rlock"), valL = b.getAttribute("data-val") === "true";
+          await db.ref("rooms/" + ridL + "/locked").set(valL);
+          toast(valL ? "تم قفل الغرفة" : "تم فتح الغرفة");
+          loadAllAdminData();
+        } else if (b.hasAttribute("data-rdel")) {
+          var ridD = b.getAttribute("data-rdel");
+          await db.ref("rooms/" + ridD).remove();
+          toast("تم حذف الغرفة");
+          loadAllAdminData();
+        } else if (b.hasAttribute("data-gdel")) {
+          var gidD = b.getAttribute("data-gdel");
+          await db.ref("gifts/" + gidD).remove();
+          toast("تم حذف الهدية");
+          loadAllAdminData();
+        } else if (b.hasAttribute("data-repclose")) {
+          var repId = b.getAttribute("data-repclose");
+          await db.ref("reports/" + repId + "/status").set("closed");
+          toast("تم إغلاق البلاغ");
+          loadAllAdminData();
+        }
+      });
+
+      auth.onAuthStateChanged(async function (user) {
+        if (!user) {
+          state.me = null;
+          $("login-view").classList.remove("hidden");
+          $("denied-view").classList.add("hidden");
+          $("dash-view").classList.add("hidden");
+          return;
+        }
+        state.me = user;
+        try {
+          var snap = await db.ref("users/" + user.uid + "/isAdmin").once("value");
+          if (snap.val() === true) {
+            $("login-view").classList.add("hidden");
+            $("denied-view").classList.add("hidden");
+            $("dash-view").classList.remove("hidden");
+            $("adm-user-label").textContent = (user.displayName || user.email || user.uid);
+            loadAllAdminData();
+          } else {
+            $("login-view").classList.add("hidden");
+            $("dash-view").classList.add("hidden");
+            $("denied-view").classList.remove("hidden");
+            $("denied-info").textContent = "الحساب (" + (user.email || user.uid) + ") لا يملك صلاحية isAdmin في قاعدة البيانات.";
+          }
+        } catch (e) {
+          $("login-view").classList.add("hidden");
+          $("dash-view").classList.add("hidden");
+          $("denied-view").classList.remove("hidden");
+          $("denied-info").textContent = "تعذر التحقق من صلاحية الإدارة: " + (e.message || "");
+        }
       });
     })();
   </script>
