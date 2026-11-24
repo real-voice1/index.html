@@ -1,288 +1,285 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>لوحة إدارة REAL VOICE</title>
-  <style>
-    :root {
-      --bg: #070910;
-      --card: #121726;
-      --card2: #192034;
-      --ink: #f8fafc;
-      --muted: #94a3b8;
-      --line: rgba(148,163,184,0.18);
-      --brand: #7c3aed;
-      --gold: #f59e0b;
-      --ok: #22c55e;
-      --bad: #ef4444;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: "Segoe UI", Tahoma, Arial, sans-serif; background: var(--bg); color: var(--ink); padding: 16px; }
-    .wrap { max-width: 1080px; margin: 0 auto; }
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
-    h1, h2, h3 { margin: 0 0 10px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .stat { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-    .stat b { display: block; font-size: 20px; color: var(--gold); }
-    .stat span { font-size: 12px; color: var(--muted); }
-    input, select { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: #0c101b; color: var(--ink); margin-top: 4px; }
-    .btn { border: none; border-radius: 10px; padding: 9px 14px; font-weight: 800; color: #fff; background: var(--brand); cursor: pointer; }
-    .btn.ok { background: var(--ok); color: #051b0c; }
-    .btn.red { background: var(--bad); }
-    .btn.sm { padding: 6px 10px; }
-    .btn.gold { background: var(--gold); color: #0b0d14; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-    th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: right; }
-    th { color: var(--muted); font-size: 12px; }
-    .row-flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .hidden { display: none !important; }
-    .pill { padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; background: rgba(34,197,94,0.18); color: #4ade80; }
-    .pill.off { background: rgba(239,68,68,0.18); color: #f87171; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>REAL VOICE — لوحة الإدارة</title>
+<style>
+:root{--bg:#0a0d16;--panel:#111626;--panel2:#171e33;--ink:#f1f5f9;--mut:#8b97b1;--line:rgba(148,163,184,.16);--brand:#7c3aed;--brand2:#db2777;--gold:#f59e0b;--ok:#22c55e;--bad:#ef4444;--r:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Tahoma,Arial,sans-serif;font-size:14px}
+.hidden{display:none!important}
+.top{position:sticky;top:0;z-index:20;background:rgba(10,13,22,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900}
+.logo i{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-style:normal}
+.nav{display:flex;gap:6px;overflow-x:auto;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.nav button{white-space:nowrap;border:1px solid var(--line);background:var(--panel2);color:var(--mut);border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;cursor:pointer}
+.nav button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border-color:transparent}
+.wrap{max-width:1100px;margin:0 auto;padding:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:14px}
+h2{margin:0 0 12px;font-size:17px}
+h3{margin:0 0 8px;font-size:14px;color:var(--mut)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat b{display:block;font-size:22px;color:var(--gold)}.stat span{font-size:12px;color:var(--mut)}
+input,select,textarea{width:100%;background:#0b0f1c;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:9px 11px;font:inherit}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}
+.btn{border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:800;color:#fff;background:var(--brand);cursor:pointer}
+.btn.ok{background:var(--ok);color:#04210f}.btn.bad{background:var(--bad)}.btn.gold{background:var(--gold);color:#1a1203}.btn.ghost{background:var(--panel2);border:1px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:0 0 auto}.row>.grow{flex:1 1 140px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}
+th{color:var(--mut);font-size:12px;font-weight:700}
+.av{width:36px;height:36px;border-radius:12px;background:var(--panel2) center/cover;display:inline-grid;place-items:center;font-weight:900;vertical-align:middle;margin-left:8px}
+.pill{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(34,197,94,.16);color:#4ade80}.pill.off{background:rgba(239,68,68,.16);color:#f87171}
+code{color:#c4b5fd}.mut{color:var(--mut);font-size:12px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1f2937;border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:99;display:none;max-width:90vw}
+.login{max-width:380px;margin:12vh auto;text-align:center}
+.thumb{width:90px;height:50px;border-radius:8px;object-fit:cover;background:var(--panel2)}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="admin-login-box" class="card">
-      <h2>🛡️ تسجيل دخول الإدارة — REAL VOICE</h2>
-      <p style="color:var(--muted);font-size:13px">سجّل الدخول بحساب Google المصرّح له بصلاحية <code>isAdmin: true</code>.</p>
-      <button class="btn" id="adm-google-btn" type="button">تسجيل الدخول بحساب Google</button>
-    </div>
+<div id="toast"></div>
 
-    <div id="admin-main" class="hidden">
-      <div class="card row-flex" style="justify-content:space-between">
-        <div>
-          <h2 style="margin:0">🛡️ لوحة التحكم المتكاملة — REAL VOICE</h2>
-          <small style="color:var(--muted)" id="adm-whoami"></small>
-        </div>
-        <div class="row-flex">
-          <button class="btn red" id="adm-logout-btn" type="button">خروج</button>
-        </div>
-      </div>
+<div id="login" class="wrap"><div class="card login">
+  <div class="logo" style="justify-content:center;margin-bottom:12px"><i>🎙️</i> REAL VOICE</div>
+  <p class="mut">لوحة الإدارة — سجّل الدخول بحساب Google المصرّح له (isAdmin).</p>
+  <button class="btn" id="login-btn" type="button">تسجيل الدخول بحساب Google</button>
+</div></div>
 
-      <!-- إدارة المستخدمين: إرسال عملات وتغيير ID -->
-      <div class="card">
-        <h3>👥 إدارة المستخدمين (منح / خصم عملات وتغيير ID)</h3>
-        <input id="u-search" placeholder="ابحث بالاسم أو رقم ID الحالي أو UID..." />
-        <table>
-          <thead>
-            <tr>
-              <th>المستخدم</th>
-              <th>ID الحالي</th>
-              <th>الرصيد</th>
-              <th>تعديل ID (7 أرقام)</th>
-              <th>منح / خصم عملات</th>
-            </tr>
-          </thead>
-          <tbody id="users-tbody"></tbody>
-        </table>
-      </div>
-
-      <!-- هدايا الحظ -->
-      <div class="card">
-        <h3>🎲 هدايا الحظ</h3>
-        <p style="color:var(--muted);font-size:12.5px;margin:0 0 6px">جدول النسب (الجائزة معروضة لهدية بسعر 100).</p>
-        <table>
-          <thead>
-            <tr><th>المضاعف</th><th>النسبة</th><th>الجائزة (لهدية 100)</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><b>0×</b></td><td>45%</td><td>0</td></tr>
-            <tr><td><b>0.5×</b></td><td>20%</td><td>50</td></tr>
-            <tr><td><b>1×</b></td><td>20%</td><td>100</td></tr>
-            <tr><td><b>2×</b></td><td>10%</td><td>200</td></tr>
-            <tr><td><b>5×</b></td><td>4%</td><td>500</td></tr>
-            <tr><td><b>10×</b></td><td>1%</td><td>1000</td></tr>
-          </tbody>
-        </table>
-        <div class="row-flex" style="margin-top:12px">
-          <label style="flex:1;min-width:160px">سعر الهدية للمعاينة
-            <input id="lk-price" type="number" min="1" value="100" />
-          </label>
-        </div>
-        <table>
-          <thead><tr><th>المضاعف</th><th>الجائزة عند هذا السعر</th></tr></thead>
-          <tbody id="lk-preview-tbody"></tbody>
-        </table>
-      </div>
-
-      <!-- سجل التدقيق الإداري -->
-      <div class="card">
-        <h3>📜 سجل التدقيق الإداري (Audit Log)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>العملية</th>
-              <th>المستهدف</th>
-              <th>القيمة السابقة / الجديدة</th>
-              <th>المشرف</th>
-              <th>الوقت</th>
-            </tr>
-          </thead>
-          <tbody id="audit-tbody"></tbody>
-        </table>
-      </div>
-    </div>
+<div id="app" class="hidden">
+  <div class="top">
+    <div class="logo"><i>🎙️</i><div>لوحة الإدارة<div class="mut" id="who"></div></div></div>
+    <button class="btn bad sm" id="logout" type="button">خروج</button>
   </div>
+  <div class="nav" id="nav"></div>
+  <div class="wrap">
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-  <script>
-    const FIREBASE_CONFIG = {
-      apiKey: "AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",
-      authDomain: "real-voice-aec71.firebaseapp.com",
-      databaseURL: "https://real-voice-aec71-default-rtdb.firebaseio.com",
-      projectId: "real-voice-aec71",
-      storageBucket: "real-voice-aec71.firebasestorage.app",
-      messagingSenderId: "1051527775983",
-      appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
-    };
+    <section data-sec="dash"><div class="card"><h2>📊 نظرة عامة</h2><div class="grid" id="stats"></div></div></section>
 
-    firebase.initializeApp(FIREBASE_CONFIG);
-    const auth = firebase.auth();
-    const db = firebase.database();
+    <section data-sec="users" class="hidden"><div class="card">
+      <h2>👥 المستخدمون</h2>
+      <input id="u-q" placeholder="ابحث بالاسم أو ID أو UID..." />
+      <div class="scroll"><table><thead><tr><th>المستخدم</th><th>ID</th><th>الرصيد</th><th>منح / خصم عملات</th><th>تغيير ID</th></tr></thead><tbody id="u-body"></tbody></table></div>
+    </div></section>
 
-    let allProfiles = {};
-    let allWallets = {};
+    <section data-sec="rooms" class="hidden"><div class="card">
+      <h2>🎙️ الغرف</h2>
+      <div class="scroll"><table><thead><tr><th>الغرفة</th><th>المالك</th><th>المقاعد</th><th>إجراءات</th></tr></thead><tbody id="r-body"></tbody></table></div>
+    </div></section>
 
-    document.getElementById("adm-google-btn").onclick = () => {
-      auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    };
-    document.getElementById("adm-logout-btn").onclick = () => auth.signOut();
+    <section data-sec="gifts" class="hidden">
+      <div class="card"><h2 id="g-title">🎁 إضافة هدية</h2>
+        <div class="row">
+          <label class="grow">الاسم<input id="g-name" /></label>
+          <label style="width:90px">الإيموجي<input id="g-emoji" placeholder="🎁" /></label>
+          <label style="width:110px">السعر<input id="g-price" type="number" min="0" /></label>
+          <label style="width:90px">الترتيب<input id="g-order" type="number" value="1" /></label>
+        </div>
+        <label>رابط صورة الهدية (اختياري، يظهر بدل الإيموجي)<input id="g-img" placeholder="https://..." /></label>
+        <div class="row"><label style="margin:0"><input id="g-active" type="checkbox" checked style="width:auto"> مفعّلة</label>
+          <button class="btn ok" id="g-save" type="button">حفظ الهدية</button><button class="btn ghost" id="g-reset" type="button">جديد</button></div>
+      </div>
+      <div class="card"><h2>قائمة الهدايا (تظهر في مربعات صندوق الهدايا)</h2>
+        <div class="scroll"><table><thead><tr><th>الهدية</th><th>السعر</th><th>الترتيب</th><th>الحالة</th><th></th></tr></thead><tbody id="g-body"></tbody></table></div>
+      </div>
+    </section>
 
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        document.getElementById("admin-login-box").classList.remove("hidden");
-        document.getElementById("admin-main").classList.add("hidden");
-        return;
-      }
-      const isAdm = (await db.ref(`users/${user.uid}/isAdmin`).once("value")).val();
-      if (isAdm !== true) {
-        alert("هذا الحساب لا يملك صلاحية الإدارة (isAdmin: true).");
-        auth.signOut();
-        return;
-      }
-      document.getElementById("admin-login-box").classList.add("hidden");
-      document.getElementById("admin-main").classList.remove("hidden");
-      document.getElementById("adm-whoami").textContent = `مسجل كـ: ${user.email || user.uid}`;
-      startAdminListeners();
-    });
+    <section data-sec="cup" class="hidden"><div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">🏆 كاس الغرف (كل الغرف)</h2>
+        <div class="row"><button class="btn ghost sm" id="cup-refresh" type="button">🔄 تحديث</button><button class="btn bad sm" id="cup-reset" type="button">تصفير الكاس بالكامل</button></div></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>المرسل</th><th>عدد الهدايا</th><th>القيمة 🪙</th></tr></thead><tbody id="c-body"></tbody></table></div>
+    </div></section>
 
-    function esc(v) {
-      return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    }
+    <section data-sec="lucky" class="hidden"><div class="card">
+      <h2>🎲 هدايا الحظ</h2>
+      <div class="scroll"><table><thead><tr><th>المضاعف</th><th>النسبة</th><th>الجائزة (لهدية 100)</th></tr></thead><tbody>
+        <tr><td><b>0×</b></td><td>45%</td><td>0</td></tr><tr><td><b>0.5×</b></td><td>20%</td><td>50</td></tr>
+        <tr><td><b>1×</b></td><td>20%</td><td>100</td></tr><tr><td><b>2×</b></td><td>10%</td><td>200</td></tr>
+        <tr><td><b>5×</b></td><td>4%</td><td>500</td></tr><tr><td><b>10×</b></td><td>1%</td><td>1000</td></tr></tbody></table></div>
+      <label style="margin-top:10px">سعر الهدية للمعاينة<input id="lk-price" type="number" min="1" value="100" /></label>
+      <div class="scroll"><table><thead><tr><th>المضاعف</th><th>الجائزة</th></tr></thead><tbody id="lk-body"></tbody></table></div>
+    </div></section>
 
-    const LUCKY_ODDS = [
-      { label: "0×", mult: 0 }, { label: "0.5×", mult: 0.5 }, { label: "1×", mult: 1 },
-      { label: "2×", mult: 2 }, { label: "5×", mult: 5 }, { label: "10×", mult: 10 }
-    ];
-    function renderLuckyPreview() {
-      const price = Math.max(1, Math.floor(Number(document.getElementById("lk-price").value || 100)));
-      document.getElementById("lk-preview-tbody").innerHTML = LUCKY_ODDS.map((o) =>
-        `<tr><td><b>${o.label}</b></td><td>${Math.floor(price * o.mult).toLocaleString("en-US")}</td></tr>`).join("");
-    }
-    document.getElementById("lk-price").oninput = renderLuckyPreview;
-    renderLuckyPreview();
+    <section data-sec="banners" class="hidden"><div class="card">
+      <h2>🖼️ البنرات</h2>
+      <div class="row"><input class="grow" id="b-url" placeholder="رابط صورة البنر https://..." /><button class="btn ok" id="b-add" type="button">إضافة</button></div>
+      <div class="scroll"><table><tbody id="b-body"></tbody></table></div>
+    </div></section>
 
-    function startAdminListeners() {
-      db.ref("publicProfiles").on("value", (s) => { allProfiles = s.val() || {}; renderUsersTable(); });
-      db.ref("economy/wallets").on("value", (s) => { allWallets = s.val() || {}; renderUsersTable(); });
+    <section data-sec="settings" class="hidden"><div class="card">
+      <h2>⚙️ إعدادات التطبيق</h2>
+      <label><input id="s-maint" type="checkbox" style="width:auto"> وضع الصيانة (يظهر شريط تنبيه للجميع)</label>
+      <label>رسالة الصيانة<input id="s-msg" /></label>
+      <label><input id="s-room" type="checkbox" style="width:auto"> السماح بإنشاء الغرف</label>
+      <label><input id="s-gifts" type="checkbox" style="width:auto"> تفعيل الهدايا</label>
+      <button class="btn ok" id="s-save" type="button">حفظ الإعدادات</button>
+    </div></section>
 
-      db.ref("adminAuditLogs").limitToLast(25).on("value", (s) => {
-        const logs = Object.values(s.val() || {}).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
-        document.getElementById("audit-tbody").innerHTML = logs.map((l) => `
-          <tr>
-            <td>${esc(l.action)}</td>
-            <td><code>${esc(l.targetUid || "-")}</code></td>
-            <td>${l.oldValue != null ? `${esc(l.oldValue)} ➔ ${esc(l.newValue)}` : `${esc(l.delta || 0)} (الرصيد: ${esc(l.newBalance || 0)})`}</td>
-            <td><code>${esc(l.adminUid || "-")}</code></td>
-            <td>${new Date(l.createdAt || Date.now()).toLocaleString("ar-EG")}</td>
-          </tr>
-        `).join("");
-      });
-    }
+    <section data-sec="reports" class="hidden"><div class="card">
+      <h2>🚩 البلاغات</h2>
+      <div class="scroll"><table><thead><tr><th>المُبلِّغ</th><th>المبلَّغ عنه</th><th>السبب</th><th>الحالة</th><th></th></tr></thead><tbody id="rp-body"></tbody></table></div>
+    </div></section>
 
-    document.getElementById("u-search").oninput = renderUsersTable;
+    <section data-sec="audit" class="hidden"><div class="card">
+      <h2>📜 سجل الإدارة</h2>
+      <div class="scroll"><table><thead><tr><th>العملية</th><th>المستهدف</th><th>التفاصيل</th><th>الوقت</th></tr></thead><tbody id="a-body"></tbody></table></div>
+    </div></section>
 
-    function renderUsersTable() {
-      const q = (document.getElementById("u-search").value || "").trim().toLowerCase();
-      const tbody = document.getElementById("users-tbody");
-      const list = Object.keys(allProfiles).map((uid) => {
-        const p = allProfiles[uid] || {};
-        const w = allWallets[uid] || {};
-        return {
-          uid,
-          name: p.name || "مستخدم",
-          specialId: String(p.specialId || "1000001"),
-          balance: Number(typeof w === "object" ? (w.balance != null ? w.balance : (w.coins || 0)) : (w || 0))
-        };
-      }).filter((u) => !q || u.name.toLowerCase().indexOf(q) >= 0 || u.specialId.indexOf(q) >= 0 || u.uid.toLowerCase().indexOf(q) >= 0);
+  </div>
+</div>
 
-      // لا نعيد بناء الجدول أثناء كتابة المدير داخل حقل
-      if (tbody.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",authDomain:"real-voice-aec71.firebaseapp.com",databaseURL:"https://real-voice-aec71-default-rtdb.firebaseio.com",projectId:"real-voice-aec71",storageBucket:"real-voice-aec71.firebasestorage.app",messagingSenderId:"1051527775983",appId:"1:1051527775983:web:ae3794c162184fd56b7d1a"});
+const auth=firebase.auth(), db=firebase.database();
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=n=>Number(n||0).toLocaleString("en-US");
+let P={},W={},R={},G={},B=[],RP={},SET={},editId=null;
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",3200)}
+const audit=e=>db.ref("adminAuditLogs").push(Object.assign({adminUid:auth.currentUser.uid,createdAt:Date.now()},e));
+async function run(fn){try{await fn()}catch(e){toast("تعذر التنفيذ — تحقق من قواعد Firebase")}}
 
-      tbody.innerHTML = list.slice(0, 40).map((u) => `
-        <tr>
-          <td><b>${esc(u.name)}</b><br><small style="color:var(--muted)">${esc(u.uid)}</small></td>
-          <td><code>${esc(u.specialId)}</code></td>
-          <td><b>${u.balance.toLocaleString("en-US")}</b> 🪙</td>
-          <td>
-            <div class="row-flex">
-              <input id="newid_${esc(u.uid)}" maxlength="7" inputmode="numeric" placeholder="7 أرقام" style="width:105px;margin:0" />
-              <button class="btn" type="button" onclick="changeId('${esc(u.uid)}')">تغيير ID</button>
-            </div>
-          </td>
-          <td>
-            <div class="row-flex">
-              <input id="coins_${esc(u.uid)}" type="number" min="1" placeholder="المبلغ" style="width:100px;margin:0" />
-              <button class="btn ok" type="button" onclick="sendCoins('${esc(u.uid)}', 1)">منح</button>
-              <button class="btn red" type="button" onclick="sendCoins('${esc(u.uid)}', -1)">خصم</button>
-            </div>
-          </td>
-        </tr>
-      `).join("");
-    }
+const SECS=[["dash","📊 نظرة عامة"],["users","👥 المستخدمون"],["rooms","🎙️ الغرف"],["gifts","🎁 الهدايا"],["cup","🏆 الكاس"],["lucky","🎲 هدايا الحظ"],["banners","🖼️ البنرات"],["settings","⚙️ الإعدادات"],["reports","🚩 البلاغات"],["audit","📜 السجل"]];
+$("nav").innerHTML=SECS.map(s=>`<button data-go="${s[0]}">${s[1]}</button>`).join("");
+function go(k){document.querySelectorAll("[data-sec]").forEach(e=>e.classList.toggle("hidden",e.dataset.sec!==k));document.querySelectorAll("[data-go]").forEach(b=>b.classList.toggle("on",b.dataset.go===k));if(k==="cup")loadCup()}
+$("nav").onclick=e=>{const b=e.target.closest("[data-go]");if(b)go(b.dataset.go)};go("dash");
 
-    function writeAudit(entry) {
-      return db.ref("adminAuditLogs").push(Object.assign({ adminUid: auth.currentUser.uid, createdAt: Date.now() }, entry));
-    }
+$("login-btn").onclick=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(()=>toast("فشل تسجيل الدخول"));
+$("logout").onclick=()=>auth.signOut();
+auth.onAuthStateChanged(async u=>{
+  if(!u){$("login").classList.remove("hidden");$("app").classList.add("hidden");return}
+  let ok=false;try{ok=(await db.ref("users/"+u.uid+"/isAdmin").once("value")).val()===true}catch(e){}
+  if(!ok){toast("هذا الحساب لا يملك صلاحية الإدارة");auth.signOut();return}
+  $("login").classList.add("hidden");$("app").classList.remove("hidden");$("who").textContent=u.email||u.uid;start();
+});
 
-    window.changeId = async (targetUid) => {
-      const val = document.getElementById(`newid_${targetUid}`).value.trim();
-      if (!/^\d{7}$/.test(val)) { alert("ID يجب أن يكون 7 أرقام بالضبط"); return; }
-      const taken = Object.keys(allProfiles).some((u) => u !== targetUid && String((allProfiles[u] || {}).specialId) === val);
-      if (taken) { alert("هذا الـ ID مستخدم بالفعل"); return; }
-      const oldId = String((allProfiles[targetUid] || {}).specialId || "");
-      try {
-        await db.ref().update({
-          [`publicProfiles/${targetUid}/specialId`]: val,
-          [`users/${targetUid}/specialId`]: val
-        });
-        await writeAudit({ action: "changeSpecialId", targetUid, oldValue: oldId, newValue: val });
-        alert(`تم تغيير ID إلى ${val}`);
-      } catch (e) { alert("تعذر التغيير — تحقق من قواعد Firebase (انظر firebase-rules-snippet.json)."); }
-    };
+let started=false;
+function start(){
+  if(started)return;started=true;
+  const on=(p,cb)=>db.ref(p).on("value",s=>cb(s.val()),()=>toast("تعذر القراءة من "+p));
+  on("publicProfiles",v=>{P=v||{};users();stats()});
+  on("economy/wallets",v=>{W=v||{};users();stats()});
+  on("rooms",v=>{R=v||{};rooms();stats()});
+  on("gifts",v=>{G=v||{};gifts();stats()});
+  on("banners",v=>{B=Array.isArray(v)?v.filter(Boolean):Object.values(v||{});banners()});
+  on("app_settings",v=>{SET=v||{};fillSettings()});
+  on("reports",v=>{RP=v||{};reports();stats()});
+  db.ref("adminAuditLogs").limitToLast(60).on("value",s=>{
+    const a=Object.values(s.val()||{}).sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
+    $("a-body").innerHTML=a.map(l=>`<tr><td>${esc(l.action)}</td><td><code>${esc(l.targetUid||l.target||"-")}</code></td><td>${l.oldValue!=null?esc(l.oldValue)+" ➔ "+esc(l.newValue):esc(l.delta!=null?l.delta+" (الرصيد "+l.newBalance+")":(l.note||""))}</td><td>${new Date(l.createdAt||0).toLocaleString("ar-EG")}</td></tr>`).join("")});
+}
+const bal=uid=>{const w=W[uid];return w==null?0:(typeof w==="object"?Number(w.balance!=null?w.balance:(w.coins||0)):Number(w))};
+const nameOf=uid=>(P[uid]||{}).name||uid;
 
-    window.sendCoins = async (targetUid, sign) => {
-      const raw = Math.floor(Number(document.getElementById(`coins_${targetUid}`).value || 0));
-      if (!Number.isFinite(raw) || raw <= 0) { alert("اكتب مبلغاً صحيحاً أكبر من صفر"); return; }
-      const delta = raw * sign;
-      try {
-        const res = await db.ref(`economy/wallets/${targetUid}`).transaction((w) => {
-          const cur = (w && typeof w === "object") ? w : { balance: Number(w || 0) };
-          const bal = Number(cur.balance != null ? cur.balance : (cur.coins || 0));
-          const next = bal + delta;
-          if (next < 0) return; // إلغاء: لا يسمح برصيد سالب
-          return Object.assign({}, cur, { balance: next });
-        });
-        if (!res.committed) { alert("لا يمكن الخصم: الرصيد أقل من المبلغ"); return; }
-        const nb = Number(res.snapshot.val().balance);
-        await writeAudit({ action: sign > 0 ? "grantCoins" : "deductCoins", targetUid, delta, newBalance: nb });
-        document.getElementById(`coins_${targetUid}`).value = "";
-        alert(`تم التحديث. الرصيد الجديد: ${nb.toLocaleString("en-US")}`);
-      } catch (e) { alert("تعذر تنفيذ العملية — تحقق من قواعد Firebase (انظر firebase-rules-snippet.json)."); }
-    };
-  </script>
+function stats(){
+  const coins=Object.keys(W).reduce((a,k)=>a+bal(k),0);
+  const open=Object.values(RP).filter(r=>r.status!=="resolved").length;
+  const items=[["المستخدمون",Object.keys(P).length],["الغرف",Object.keys(R).length],["الهدايا",Object.keys(G).length],["إجمالي العملات",coins],["بلاغات مفتوحة",open]];
+  $("stats").innerHTML=items.map(i=>`<div class="stat"><b>${num(i[1])}</b><span>${i[0]}</span></div>`).join("");
+}
+
+function users(){
+  const tb=$("u-body");if(!tb)return;
+  if(tb.contains(document.activeElement)&&document.activeElement.tagName==="INPUT")return;
+  const q=($("u-q").value||"").trim().toLowerCase();
+  const l=Object.keys(P).filter(u=>{const p=P[u]||{};return!q||String(p.name||"").toLowerCase().includes(q)||String(p.specialId||"").includes(q)||u.toLowerCase().includes(q)}).slice(0,50);
+  tb.innerHTML=l.map(u=>{const p=P[u]||{};const ph=p.photo&&!String(p.photo).startsWith("data:")?`style="background-image:url('${esc(p.photo)}')"`:"";
+    return `<tr><td><span class="av" ${ph}>${ph?"":esc((p.name||"?")[0])}</span><b>${esc(p.name||"مستخدم")}</b><div class="mut">${esc(u)}</div></td>
+    <td><code>${esc(p.specialId||"-")}</code></td><td><b>${num(bal(u))}</b> 🪙</td>
+    <td><div class="row"><input id="c_${esc(u)}" type="number" min="1" placeholder="المبلغ" style="width:90px"><button class="btn ok sm" data-coin="${esc(u)}" data-s="1">منح</button><button class="btn bad sm" data-coin="${esc(u)}" data-s="-1">خصم</button></div></td>
+    <td><div class="row"><input id="i_${esc(u)}" maxlength="7" inputmode="numeric" placeholder="7 أرقام" style="width:100px"><button class="btn sm" data-id="${esc(u)}">تغيير</button></div></td></tr>`}).join("");
+}
+$("u-q").oninput=users;
+$("u-body").onclick=e=>{
+  const c=e.target.closest("[data-coin]"),i=e.target.closest("[data-id]");
+  if(c)coins(c.dataset.coin,Number(c.dataset.s));if(i)changeId(i.dataset.id);
+};
+function coins(uid,sign){
+  const amt=Math.floor(Number($("c_"+uid).value||0));if(!(amt>0))return toast("اكتب مبلغاً صحيحاً");
+  run(async()=>{
+    const r=await db.ref("economy/wallets/"+uid).transaction(w=>{
+      const cur=(w&&typeof w==="object")?w:{balance:Number(w||0)};const nb=Number(cur.balance!=null?cur.balance:(cur.coins||0))+sign*amt;
+      if(nb<0)return;return Object.assign({},cur,{balance:nb})});
+    if(!r.committed)return toast("الرصيد لا يكفي للخصم");
+    const nb=r.snapshot.val().balance;await audit({action:sign>0?"grantCoins":"deductCoins",targetUid:uid,delta:sign*amt,newBalance:nb});
+    $("c_"+uid).value="";toast("تم — الرصيد الجديد "+num(nb));
+  });
+}
+function changeId(uid){
+  const v=$("i_"+uid).value.trim();if(!/^\d{7}$/.test(v))return toast("ID يجب أن يكون 7 أرقام");
+  if(Object.keys(P).some(u=>u!==uid&&String((P[u]||{}).specialId)===v))return toast("هذا الـ ID مستخدم");
+  run(async()=>{const old=(P[uid]||{}).specialId||"";
+    await db.ref().update({["publicProfiles/"+uid+"/specialId"]:v,["users/"+uid+"/specialId"]:v});
+    await audit({action:"changeSpecialId",targetUid:uid,oldValue:old,newValue:v});toast("تم تغيير ID إلى "+v)});
+}
+
+function rooms(){
+  $("r-body").innerHTML=Object.keys(R).map(id=>{const r=R[id]||{};
+    return `<tr><td><b>${esc(r.name||id)}</b>${r.priv?' <span class="pill off">خاصة</span>':''}<div class="mut">${esc(id)}</div></td><td>${esc(nameOf(r.owner))}</td><td>${esc(r.seatCount||"-")}</td>
+    <td><div class="row"><button class="btn ghost sm" data-cup0="${esc(id)}">تصفير كاسها</button><button class="btn bad sm" data-delroom="${esc(id)}">حذف</button></div></td></tr>`}).join("")||`<tr><td colspan="4" class="mut">لا توجد غرف</td></tr>`;
+}
+$("r-body").onclick=e=>{
+  const c=e.target.closest("[data-cup0]"),d=e.target.closest("[data-delroom]");
+  if(c&&confirm("تصفير كاس هذه الغرفة؟"))run(async()=>{await db.ref("giftEvents/"+c.dataset.cup0).remove();await audit({action:"resetRoomCup",target:c.dataset.cup0});toast("تم")});
+  if(d&&confirm("حذف الغرفة نهائياً مع رسائلها وكاسها؟"))run(async()=>{const id=d.dataset.delroom,o=(R[id]||{}).owner;
+    const up={["rooms/"+id]:null,["roomMessages/"+id]:null,["giftEvents/"+id]:null};if(o)up["userRoomIndex/"+o]=null;
+    await db.ref().update(up);await audit({action:"deleteRoom",target:id});toast("تم حذف الغرفة")});
+};
+
+function gifts(){
+  const l=Object.keys(G).map(k=>Object.assign({_k:k},G[k])).sort((a,b)=>(a.order||0)-(b.order||0));
+  $("g-body").innerHTML=l.map(g=>`<tr><td>${g.image?`<img class="thumb" style="width:34px;height:34px" src="${esc(g.image)}">`:esc(g.emoji||g.e||"🎁")} <b>${esc(g.name||g.n)}</b></td><td>${num(g.price!=null?g.price:g.p)} 🪙</td><td>${esc(g.order||0)}</td>
+    <td><span class="pill ${g.active===false?"off":""}">${g.active===false?"متوقفة":"مفعّلة"}</span></td>
+    <td><div class="row"><button class="btn sm" data-ge="${esc(g._k)}">تعديل</button><button class="btn bad sm" data-gd="${esc(g._k)}">حذف</button></div></td></tr>`).join("")||`<tr><td colspan="5" class="mut">لا توجد هدايا — الصندوق فارغ</td></tr>`;
+}
+function gReset(){editId=null;["g-name","g-emoji","g-price","g-img"].forEach(i=>$(i).value="");$("g-order").value=1;$("g-active").checked=true;$("g-title").textContent="🎁 إضافة هدية"}
+$("g-reset").onclick=gReset;
+$("g-save").onclick=()=>{
+  const name=$("g-name").value.trim(),price=Math.floor(Number($("g-price").value));
+  if(!name||!(price>=0))return toast("اكتب اسم الهدية وسعرها");
+  const data={name,emoji:$("g-emoji").value.trim()||"🎁",price,image:$("g-img").value.trim(),order:Number($("g-order").value||0),active:$("g-active").checked};
+  run(async()=>{const k=editId||db.ref("gifts").push().key;await db.ref("gifts/"+k).set(data);await audit({action:editId?"editGift":"addGift",target:k,note:name+" — "+price});gReset();toast("تم حفظ الهدية")});
+};
+$("g-body").onclick=e=>{
+  const ed=e.target.closest("[data-ge]"),de=e.target.closest("[data-gd]");
+  if(ed){const g=G[ed.dataset.ge]||{};editId=ed.dataset.ge;$("g-name").value=g.name||g.n||"";$("g-emoji").value=g.emoji||g.e||"";$("g-price").value=g.price!=null?g.price:g.p;$("g-img").value=g.image||g.gifUrl||"";$("g-order").value=g.order||0;$("g-active").checked=g.active!==false;$("g-title").textContent="✏️ تعديل هدية";scrollTo({top:0,behavior:"smooth"})}
+  if(de&&confirm("حذف الهدية؟"))run(async()=>{await db.ref("gifts/"+de.dataset.gd).remove();await audit({action:"deleteGift",target:de.dataset.gd});toast("تم الحذف")});
+};
+
+async function loadCup(){
+  const tb=$("c-body");tb.innerHTML=`<tr><td colspan="4" class="mut">جاري التحميل...</td></tr>`;
+  try{const v=(await db.ref("giftEvents").once("value")).val()||{},t={};
+    Object.values(v).forEach(room=>Object.values(room||{}).forEach(e=>{if(!e||!e.fromUid)return;const n=Math.max(1,Number(e.count||1));const x=t[e.fromUid]||(t[e.fromUid]={name:e.fromName,c:0,v:0});x.c+=n;x.v+=n*Number(e.price||0)}));
+    const l=Object.keys(t).map(k=>Object.assign({u:k},t[k])).sort((a,b)=>b.v-a.v||b.c-a.c);
+    tb.innerHTML=l.map((x,i)=>`<tr><td>${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td><b>${esc(nameOf(x.u)!==x.u?nameOf(x.u):x.name)}</b></td><td>${num(x.c)}</td><td>${num(x.v)}</td></tr>`).join("")||`<tr><td colspan="4" class="mut">لا توجد هدايا مسجلة</td></tr>`;
+  }catch(e){tb.innerHTML=`<tr><td colspan="4" class="mut">تعذر التحميل</td></tr>`}
+}
+$("cup-refresh").onclick=loadCup;
+$("cup-reset").onclick=()=>{if(confirm("تصفير كل الكاسات في كل الغرف؟"))run(async()=>{await db.ref("giftEvents").remove();await audit({action:"resetAllCups"});toast("تم التصفير");loadCup()})};
+
+const ODDS=[["0×",0],["0.5×",.5],["1×",1],["2×",2],["5×",5],["10×",10]];
+function lk(){const p=Math.max(1,Math.floor(Number($("lk-price").value||100)));$("lk-body").innerHTML=ODDS.map(o=>`<tr><td><b>${o[0]}</b></td><td>${num(Math.floor(p*o[1]))}</td></tr>`).join("")}
+$("lk-price").oninput=lk;lk();
+
+function banners(){$("b-body").innerHTML=B.map((u,i)=>`<tr><td><img class="thumb" src="${esc(u)}"></td><td class="mut" style="word-break:break-all">${esc(u)}</td><td><button class="btn bad sm" data-bd="${i}">حذف</button></td></tr>`).join("")||`<tr><td class="mut">لا توجد بنرات</td></tr>`}
+$("b-add").onclick=()=>{const u=$("b-url").value.trim();if(!/^https?:\/\//.test(u))return toast("اكتب رابطاً صحيحاً");run(async()=>{await db.ref("banners").set(B.concat([u]));await audit({action:"addBanner",note:u});$("b-url").value="";toast("تمت الإضافة")})};
+$("b-body").onclick=e=>{const d=e.target.closest("[data-bd]");if(d)run(async()=>{const n=B.slice();n.splice(Number(d.dataset.bd),1);await db.ref("banners").set(n.length?n:null);await audit({action:"deleteBanner"});toast("تم الحذف")})};
+
+function fillSettings(){$("s-maint").checked=SET.maintenanceMode===true;$("s-msg").value=SET.maintenanceMessage||"";$("s-room").checked=SET.allowCreateRoom!==false;$("s-gifts").checked=SET.giftsEnabled!==false}
+$("s-save").onclick=()=>run(async()=>{const v={maintenanceMode:$("s-maint").checked,maintenanceMessage:$("s-msg").value.trim(),allowCreateRoom:$("s-room").checked,giftsEnabled:$("s-gifts").checked};
+  await db.ref("app_settings").update(v);await audit({action:"updateSettings",note:JSON.stringify(v)});toast("تم حفظ الإعدادات")});
+
+function reports(){$("rp-body").innerHTML=Object.keys(RP).map(k=>RP[k]).sort((a,b)=>(b.t||0)-(a.t||0)).map(r=>`<tr><td>${esc(r.reporterName)}</td><td>${esc(r.targetName)}</td><td>${esc(r.reason)}</td><td><span class="pill ${r.status==="resolved"?"":"off"}">${r.status==="resolved"?"تم":"مفتوح"}</span></td>
+  <td><div class="row"><button class="btn ok sm" data-rs="${esc(r.id)}">تم الحل</button><button class="btn bad sm" data-rd="${esc(r.id)}">حذف</button></div></td></tr>`).join("")||`<tr><td colspan="5" class="mut">لا توجد بلاغات</td></tr>`}
+$("rp-body").onclick=e=>{const s=e.target.closest("[data-rs]"),d=e.target.closest("[data-rd]");
+  if(s)run(()=>db.ref("reports/"+s.dataset.rs+"/status").set("resolved"));if(d)run(()=>db.ref("reports/"+d.dataset.rd).remove())};
+</script>
 </body>
 </html>
