@@ -62,6 +62,13 @@
     { id: "diamond", e: "💎", gifUrl: "", n: "ألماس", p: 800, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 1 },
     { id: "vip", e: "🦁", gifUrl: "", n: "أسد VIP", p: 1500, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 2 },
     { id: "castle", e: "🏰", gifUrl: "", n: "قصر متحرك", p: 3000, isFree: false, isEvent: true, active: true, cat: "events", vipMin: 3 },
+    { id: "teddy", e: "🧸", gifUrl: "", n: "دبدوب", p: 60, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+    { id: "trophy", e: "🏆", gifUrl: "", n: "كأس البطولة", p: 250, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+    { id: "fireworks", e: "🎆", gifUrl: "", n: "ألعاب نارية", p: 400, isFree: false, isEvent: true, active: true, cat: "events", vipMin: 0 },
+    { id: "ring", e: "💍", gifUrl: "", n: "خاتم الماس", p: 700, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 1 },
+    { id: "dragon", e: "🐉", gifUrl: "", n: "التنين الذهبي", p: 1200, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 2 },
+    { id: "unicorn", e: "🦄", gifUrl: "", n: "يونيكورن سحري", p: 2000, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 2 },
+    { id: "jet", e: "✈️", gifUrl: "", n: "طائرة خاصة", p: 5000, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 3 },
     { id: "lucky_treats", e: "🍬", gifUrl: "", n: "حلويات الحظ", p: 100, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true },
     { id: "lucky_star", e: "🌟", gifUrl: "", n: "نجمة الحظ", p: 50, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true },
     { id: "lucky_clover", e: "🍀", gifUrl: "", n: "برسيم الحظ", p: 200, isFree: false, isEvent: false, active: true, cat: "lucky", vipMin: 0, lucky: true }
@@ -1592,6 +1599,7 @@
       uRef.child("online").onDisconnect().set(false);
       uRef.update({ online: true }).catch(function () { /* */ });
     } catch (e) { /* */ }
+    ensureMyRoom(myId, 0);
 
     onDb("app", cloud.db.ref("publicProfiles"), "value", function (ps) {
       var val = ps.val() || {};
@@ -2125,19 +2133,4 @@
       ups["users/" + otherId + "/following/" + S.me.id] = null;
       ups["users/" + otherId + "/followers/" + S.me.id] = null;
       ups["users/" + S.me.id + "/friendRequestsSent/" + otherId] = null;
-      ups["users/" + otherId + "/friendRequestsReceived/" + S.me.id] = null;
-      ups["users/" + otherId + "/friendRequestsSent/" + S.me.id] = null;
-      ups["users/" + otherId + "/friendRequestsReceived/" + S.me.id] = null;
-      await cloud.db.ref().update(ups);
-      if (S.blocked.indexOf(otherId) < 0) S.blocked.push(otherId);
-      S.friends = (S.friends || []).filter(function (x) { return x !== otherId; });
-      S.follows = (S.follows || []).filter(function (x) { return x !== otherId; });
-      S.followersList = (S.followersList || []).filter(function (x) { return x !== otherId; });
-      S.requests = (S.requests || []).filter(function (x) { return x !== otherId; });
-      S.sentReq = (S.sentReq || []).filter(function (x) { return x !== otherId; });
-      delete S.dms[otherId]; delete S.unread[otherId];
-      var tid = dmThreadId(S.me.id, otherId);
-      offDb("dm_" + tid);
-      delete UI.activeDmListenerLimits[tid];
-      if (UI.dmId === otherId) closeDM();
-      updateProfileRelationshipCounts(); save(); scheduleRenderAll(); toast
+      ups["users/" + otherId + "/friendRequestsReceived/" + S.me.id]
