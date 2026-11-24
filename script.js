@@ -1588,6 +1588,17 @@
   }
 
   async function handleAuthenticatedUser(gUser) {
+    try {
+      await handleAuthenticatedUserInner(gUser);
+    } catch (err) {
+      if (global.console) console.error("auth flow error:", err);
+      try { UI.authReady = true; showAuthGate(false); scheduleRenderAll(); } catch (e2) { /* */ }
+    } finally {
+      hideSplash();
+    }
+  }
+
+  async function handleAuthenticatedUserInner(gUser) {
     if (!gUser || !gUser.uid) return;
     setAuthError(""); setGuestSession(false); UI.googleUser = gUser;
     var uidVal = gUser.uid;
@@ -2041,13 +2052,4 @@
 
   function avatarInnerHTML(u) {
     if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + esc(initials(u && u.name)) + '\'" />';
-    return esc(initials(u && u.name));
-  }
-  function avatarHTML(u, cls) {
-    var vipCls = getEffectiveVip(u) > 0 ? " vip-ring" : "";
-    return '<div class="avatar ' + (cls || "") + vipCls + '">' + avatarInnerHTML(u) + "</div>";
-  }
-  function setAvatarEl(el, u) {
-    if (!el) return;
-    el.classList.toggle("vip-ring", getEffectiveVip(u) > 0);
-    el.innerHTML = avata
+    return esc(initials(u &&
