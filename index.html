@@ -970,6 +970,22 @@
     .skeleton-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .skeleton-card { height: 150px; border-radius: 18px; background: linear-gradient(90deg, var(--card), var(--card-2), var(--card)); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ===== v25: إصلاح الخلفية الشفافة + تنقل سلس ===== */
+    #room-view, #chat-view { background-color: #070910 !important; transform: translateZ(0); overscroll-behavior: contain; }
+    body.light-theme #room-view, body.light-theme #chat-view { background-color: #f4f6fb !important; }
+    body:has(#room-view.open) #app, body:has(#chat-view.open) #app,
+    body:has(#room-view.open) .bottom-nav, body:has(#chat-view.open) .bottom-nav { visibility: hidden; }
+    body:has(#room-view.open), body:has(#chat-view.open) { overflow: hidden; }
+    #room-view.open, #chat-view.open { animation: rvIn .18s ease-out; }
+    @keyframes rvIn { from { opacity: .0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .page.active { animation: pageIn .2s ease-out; }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .room-tools { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 10px; background: var(--card); border-top: 1px solid var(--line); }
+    .room-toolbar { display: flex; align-items: center; justify-content: space-around; gap: 6px; padding: 6px 10px; background: var(--bg-2); border-bottom: 1px solid var(--line); }
+    .room-toolbar .icon-btn { flex: 1; max-width: 80px; }
+    #gift-btn { background: linear-gradient(135deg, var(--gold), var(--brand-2)); border-color: transparent; }
+    @media (prefers-reduced-motion: reduce) { .page.active, #room-view.open, #chat-view.open { animation: none; } }
   </style>
 </head>
 <body>
@@ -1192,9 +1208,6 @@
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <button class="btn sm gold" id="room-wallet-btn" type="button">🪙 <span id="room-wallet-balance">0</span></button>
-        <button class="icon-btn" id="room-speaker-btn" type="button" title="صوت الغرفة">🔊</button>
-        <button class="icon-btn" id="room-presence-btn" type="button" title="المتواجدون">🎧</button>
-        <button class="icon-btn" id="room-friends-btn" type="button" title="الأصدقاء">👥</button>
         <button class="icon-btn" id="room-menu" type="button" title="خيارات">⋮</button>
         <button class="btn sm red" id="room-leave-btn" type="button">خروج</button>
       </div>
@@ -1203,6 +1216,12 @@
     <div class="voice-bar">
       <div><span class="status-dot" id="voice-status-dot"></span><span id="voice-status-text">غير متصل بالصوت</span></div>
       <div id="room-active-speaker" style="color:var(--ok);font-weight:700"></div>
+    </div>
+
+    <div class="room-toolbar">
+        <button class="icon-btn" id="room-speaker-btn" type="button" title="صوت الغرفة">🔊</button>
+                <button class="icon-btn" id="room-presence-btn" type="button" title="المتواجدون">🎧</button>
+                <button class="icon-btn" id="room-friends-btn" type="button" title="الأصدقاء">👥</button>
     </div>
 
     <div id="audio-unlock-bar" class="sys-banner hidden">
@@ -1221,17 +1240,20 @@
 
     <div id="room-chat" class="room-chat"></div>
 
+    <div class="room-tools">
+      <button class="dock-ic" id="emoji-btn" type="button" title="إيموجي">😀</button>
+      <button class="dock-ic" id="sticker-btn" type="button" title="ملصقات">🎭</button>
+      <button class="dock-ic" id="img-btn" type="button" title="صورة">📷</button>
+      <button class="dock-ic" id="music-btn" type="button" title="موسيقى">🎵</button>
+      <input id="room-img-file" type="file" accept="image/*" class="hidden" />
+    </div>
+
     <div class="room-dock">
       <button class="dock-ic" id="mic-btn" type="button" title="الميكروفون">🎙️</button>
       <button class="dock-ic hidden" id="raise-hand-btn" type="button" title="طلب المايك">✋<span class="badge-dot hidden" id="raise-badge">0</span></button>
       <input id="room-input" type="text" maxlength="240" placeholder="اكتب رسالة في الغرفة..." />
-      <button class="dock-ic" id="emoji-btn" type="button" title="إيموجي">😀</button>
-      <button class="dock-ic" id="sticker-btn" type="button" title="ملصقات">🎭</button>
-      <button class="dock-ic" id="img-btn" type="button" title="صورة">📷</button>
-      <input id="room-img-file" type="file" accept="image/*" class="hidden" />
-      <button class="dock-ic" id="music-btn" type="button" title="موسيقى">🎵</button>
-      <button class="dock-ic" id="gift-btn" type="button" title="الهدايا">🎁</button>
       <button class="btn sm" id="room-send" type="button">إرسال</button>
+      <button class="dock-ic" id="gift-btn" type="button" title="الهدايا">🎁</button>
     </div>
   </section>
 
