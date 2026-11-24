@@ -18,11 +18,11 @@
   var FUNCTIONS_BASE = "https://us-central1-real-voice-aec71.cloudfunctions.net";
 
   var CONFIG = {
-    storageKeyPrefix: "rv_state_v26_",
-    guestStorageKey: "rv_guest_state_v26",
-    guestSessionIdKey: "rv_guest_uid_v26",
-    guestModeKey: "rv_guest_mode_v26",
-    onboardDoneKeyPrefix: "rv_onboard_done_v26_",
+    storageKeyPrefix: "rv_state_v27_",
+    guestStorageKey: "rv_guest_state_v27",
+    guestSessionIdKey: "rv_guest_uid_v27",
+    guestModeKey: "rv_guest_mode_v27",
+    onboardDoneKeyPrefix: "rv_onboard_done_v27_",
     maxLevel: 100,
     xpPerLevel: 100,
     initialSpecialIdNumber: 1000001,
@@ -200,7 +200,11 @@
   function updateOverlayLock() {
     var roomOpen = $("room-view") && $("room-view").classList.contains("open");
     var dmOpen = $("chat-view") && $("chat-view").classList.contains("open");
-    document.body.classList.toggle("overlay-open", !!(roomOpen || dmOpen));
+    var lock = !!(roomOpen || dmOpen);
+    document.body.classList.toggle("overlay-open", lock);
+    var appEl = $("app"), navEl = document.querySelector(".bottom-nav");
+    if (appEl) appEl.style.display = lock ? "none" : "";
+    if (navEl) navEl.style.display = lock ? "none" : "";
   }
 
   function normWord(w) {
@@ -307,40 +311,6 @@
     var paid = Math.max(0, Number(S && S.me && S.me.coins || 0));
     var bonus = Math.max(0, Number(S && S.me && S.me.senderBonusBalance || 0));
     return paid + bonus;
-  }
-
-  function openWalletSheet() {
-    var paidBal = Math.max(0, Number(S && S.me && S.me.coins || 0));
-    var senderBonus = Math.max(0, Number(S && S.me && S.me.senderBonusBalance || 0));
-    var recipientReward = Math.max(0, Number(S && S.me && S.me.recipientRewardBalance || 0));
-    openSheet(
-      "<h3>👛 محفظتي والأرصدة المفصولة</h3>" +
-      "<div class='stats-grid' style='margin-bottom:10px'>" +
-        "<div class='stat-box'><b>" + paidBal.toLocaleString("en-US") + "</b><span>الرصيد الأساسي 🪙</span></div>" +
-        "<div class='stat-box'><b>" + senderBonus.toLocaleString("en-US") + "</b><span>مكافآت المرسل 🎲</span></div>" +
-        "<div class='stat-box'><b>" + recipientReward.toLocaleString("en-US") + "</b><span>استحقاق المستلم 🎁</span></div>" +
-      "</div>" +
-      "<div class='notice'>يُستخدم الرصيد الأساسي ومكافآت المرسل في إرسال الهدايا. استحقاق المستلم (10% من هدايا الحظ) هو رصيد مكافآت تجريبي غير قابل للسحب تلقائياً.</div>" +
-      "<div style='display:flex;gap:8px;margin-top:8px'>" +
-        "<button class='btn' style='flex:1' id='wallet-history-btn' type='button'>📜 سجل المحفظة</button>" +
-        "<button class='btn gold' style='flex:1' id='wallet-lucky-log-btn' type='button'>🎲 سجل هدايا الحظ</button>" +
-      "</div>" +
-      "<div id='wallet-history-list' class='list' style='margin-top:8px'></div>"
-    );
-    if ($("wallet-lucky-log-btn")) $("wallet-lucky-log-btn").onclick = function () { openLuckyHistorySheet(1); };
-    if ($("wallet-history-btn")) $("wallet-history-btn").onclick = async function () {
-      var box = $("wallet-history-list");
-      box.innerHTML = '<div class="empty">جاري تحميل السجل…</div>';
-      try {
-        var snap = await cloud.db.ref("economy/ledger/" + S.me.id).limitToLast(30).once("value");
-        var data = snap.val() || {};
-        var rows = Object.keys(data).map(function (k) { return data[k]; }).sort(function (a, b) { return Number(b.createdAt || 0) - Number(a.createdAt || 0); });
-        box.innerHTML = rows.length ? rows.map(function (x) {
-          var positive = Number(x.amount || 0) >= 0;
-          return '<div class="row glass" style="margin:4px 0"><div class="info"><div class="name">' + esc(x.title || x.reason || "حركة محفظة") + '</div><div class="meta">' + dateTimeStr(x.createdAt) + '</div></div><b style="color:' + (positive ? '#22c55e' : '#f87171') + '">' + (positive ? '+' : '') + Number(x.amount || 0).toLocaleString("en-US") + ' 🪙</b></div>';
-        }).join("") : '<div class="empty">لا توجد حركات حتى الآن</div>';
-      } catch (e) { box.innerHTML = '<div class="empty">تعذر تحميل سجل المحفظة</div>'; }
-    };
   }
 
   function isStandaloneApp() {
@@ -1413,10 +1383,11 @@
         return {
           id: String(g.id || key), e: String(g.e || g.emoji || "🎁"), n: String(g.n || g.name || "هدية"),
           p: Math.max(0, Number(g.p != null ? g.p : g.price || 0)), vipMin: Math.max(0, Number(g.vipMin || 0)),
-          image: String(g.gifUrl || g.image || ""), active: g.active !== false, category: String(g.cat || g.category || "عام")
+          image: String(g.gifUrl || g.image || ""), active: g.active !== false, category: String(g.cat || g.category || "عام"), order: Number(g.order || 0)
         };
       }).filter(function (g) { return g.active; });
       if (S && remoteGifts.length) { S.customGifts = remoteGifts; saveLocal(); }
+      if (S) S.boxGifts = remoteGifts.slice().sort(function (a, b) { return a.order - b.order; });
     });
 
     onDb("app", cloud.db.ref("publicProfiles"), "value", function (ps) {
@@ -2052,4 +2023,51 @@
 
   function avatarInnerHTML(u) {
     if (u && u.photo) return '<img src="' + esc(u.photo) + '" alt="' + esc(u.name || "avatar") + '" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'' + esc(initials(u && u.name)) + '\'" />';
-    return esc(initials(u &&
+    return esc(initials(u && u.name));
+  }
+  function avatarHTML(u, cls) {
+    var vipCls = getEffectiveVip(u) > 0 ? " vip-ring" : "";
+    return '<div class="avatar ' + (cls || "") + vipCls + '">' + avatarInnerHTML(u) + "</div>";
+  }
+  function setAvatarEl(el, u) {
+    if (!el) return;
+    el.classList.toggle("vip-ring", getEffectiveVip(u) > 0);
+    el.innerHTML = avatarInnerHTML(u);
+  }
+
+  function roomSqMediaHTML(r, insideCount) {
+    var bg = COVERS[(r.color || 0) % COVERS.length], ic = COVER_ICONS[(r.icon || 0) % COVER_ICONS.length];
+    var inner = r.roomPhoto ? '<img src="' + esc(r.roomPhoto) + '" alt="' + esc(r.name || "") + '" loading="lazy" />' : "<span>" + ic + "</span>";
+    return '<div class="room-sq-media" style="background:' + bg + '">' +
+      '<span class="room-sq-live-pill">🎧 ' + insideCount + "</span>" +
+      (r.micApprovalMode ? '<span class="room-sq-mode-pill">✋ بطلب</span>' : "") +
+      (r.priv ? '<span class="room-sq-priv-pill">🔒 خاصة</span>' : "") + inner + "</div>";
+  }
+
+  function getRoomParticipantIds(room) {
+    var seen = {}, ids = [];
+    if (!room) return ids;
+    (room.seats || []).forEach(function (s) { if (s && s.uid && !seen[s.uid]) { seen[s.uid] = true; ids.push(s.uid); } });
+    (room.listeners || []).forEach(function (uidItem) { if (uidItem && !seen[uidItem]) { seen[uidItem] = true; ids.push(uidItem); } });
+    return ids;
+  }
+  function count(room) { return getRoomParticipantIds(room).length; }
+  function seatIndexOf(room, id) {
+    if (!room || !Array.isArray(room.seats)) return -1;
+    for (var i = 0; i < room.seats.length; i++) if (room.seats[i] && room.seats[i].uid === id) return i;
+    return -1;
+  }
+  function inRoom(room, id) { return !!room && (seatIndexOf(room, id) >= 0 || (room.listeners || []).indexOf(id) >= 0); }
+  function isRoomModOrOwner(room, userId) {
+    if (!room || !userId) return false;
+    if (room.owner === userId) return true;
+    return Array.isArray(room.mods) && room.mods.indexOf(userId) >= 0;
+  }
+
+  function pushRoomMsg(room, msgObj) {
+    if (!room) return;
+    var tNow = now();
+    if (!Array.isArray(room.msgs)) room.msgs = [];
+    room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: tNow }));
+    if (UI.roomId === room.id) renderRoomChat();
+    if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("ro
