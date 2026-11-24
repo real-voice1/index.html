@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>لوحة إدارة REAL VOICE — التحكم وهدايا الحظ</title>
+  <title>لوحة إدارة REAL VOICE</title>
   <style>
     :root {
       --bg: #070910;
@@ -30,6 +30,7 @@
     .btn { border: none; border-radius: 10px; padding: 9px 14px; font-weight: 800; color: #fff; background: var(--brand); cursor: pointer; }
     .btn.ok { background: var(--ok); color: #051b0c; }
     .btn.red { background: var(--bad); }
+    .btn.sm { padding: 6px 10px; }
     .btn.gold { background: var(--gold); color: #0b0d14; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
     th, td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: right; }
@@ -55,14 +56,13 @@
           <small style="color:var(--muted)" id="adm-whoami"></small>
         </div>
         <div class="row-flex">
-          <button class="btn gold" id="seed-lucky-btn" type="button">🌱 تهيئة كتالوج هدايا الحظ (10 هدايا)</button>
           <button class="btn red" id="adm-logout-btn" type="button">خروج</button>
         </div>
       </div>
 
       <!-- إدارة المستخدمين: إرسال عملات وتغيير ID -->
       <div class="card">
-        <h3>👥 إدارة المستخدمين (إرسال عملات وتغيير ID)</h3>
+        <h3>👥 إدارة المستخدمين (منح / خصم عملات وتغيير ID)</h3>
         <input id="u-search" placeholder="ابحث بالاسم أو رقم ID الحالي أو UID..." />
         <table>
           <thead>
@@ -71,57 +71,38 @@
               <th>ID الحالي</th>
               <th>الرصيد</th>
               <th>تعديل ID (7 أرقام)</th>
-              <th>إرسال / خصم عملات</th>
+              <th>منح / خصم عملات</th>
             </tr>
           </thead>
           <tbody id="users-tbody"></tbody>
         </table>
       </div>
 
-      <!-- إدارة نظام هدايا الحظ -->
+      <!-- هدايا الحظ -->
       <div class="card">
-        <div class="row-flex" style="justify-content:space-between">
-          <h3>🎲 إعدادات وتقارير «هدايا الحظ»</h3>
-          <div class="row-flex">
-            <span id="lucky-flag-badge" class="pill off">معطّل افتراضياً</span>
-            <button class="btn ok" id="toggle-lucky-flag-btn" type="button">تفعيل / إيقاف الميزة</button>
-          </div>
-        </div>
-
-        <div class="grid-3" style="margin-top:10px">
-          <div class="stat"><b id="st-tx-count">0</b><span>عدد العمليات</span></div>
-          <div class="stat"><b id="st-spent">0</b><span>إجمالي العملات المخصومة</span></div>
-          <div class="stat"><b id="st-sender-rew">0</b><span>مكافآت المرسلين (RTP النظري 80%)</span></div>
-          <div class="stat"><b id="st-rec-rew">0</b><span>استحقاقات المستلمين (10% ثابتة)</span></div>
-          <div class="stat"><b id="st-net-sink">0</b><span>صافي العملات المسحوبة (10% نظري)</span></div>
-        </div>
-
-        <h4 style="margin:14px 0 6px">📊 التوزيع الفعلي للمضاعفات مقارنة بالمعلن</h4>
+        <h3>🎲 هدايا الحظ</h3>
+        <p style="color:var(--muted);font-size:12.5px;margin:0 0 6px">جدول النسب (الجائزة معروضة لهدية بسعر 100).</p>
         <table>
           <thead>
-            <tr>
-              <th>المضاعف</th>
-              <th>النسبة المعلنة</th>
-              <th>العدد الفعلي</th>
-              <th>النسبة الفعلية</th>
-            </tr>
+            <tr><th>المضاعف</th><th>النسبة</th><th>الجائزة (لهدية 100)</th></tr>
           </thead>
-          <tbody id="odds-compare-tbody"></tbody>
+          <tbody>
+            <tr><td><b>0×</b></td><td>45%</td><td>0</td></tr>
+            <tr><td><b>0.5×</b></td><td>20%</td><td>50</td></tr>
+            <tr><td><b>1×</b></td><td>20%</td><td>100</td></tr>
+            <tr><td><b>2×</b></td><td>10%</td><td>200</td></tr>
+            <tr><td><b>5×</b></td><td>4%</td><td>500</td></tr>
+            <tr><td><b>10×</b></td><td>1%</td><td>1000</td></tr>
+          </tbody>
         </table>
-
-        <h4 style="margin:14px 0 6px">🎁 كتالوج هدايا الحظ (الأسعار والترتيب والتفعيل)</h4>
+        <div class="row-flex" style="margin-top:12px">
+          <label style="flex:1;min-width:160px">سعر الهدية للمعاينة
+            <input id="lk-price" type="number" min="1" value="100" />
+          </label>
+        </div>
         <table>
-          <thead>
-            <tr>
-              <th>المعرف الثابت</th>
-              <th>الاسم</th>
-              <th>السعر</th>
-              <th>مكافأة المستلم (10%)</th>
-              <th>أقصى مكافأة (10×)</th>
-              <th>الحالة</th>
-            </tr>
-          </thead>
-          <tbody id="lucky-catalog-tbody"></tbody>
+          <thead><tr><th>المضاعف</th><th>الجائزة عند هذا السعر</th></tr></thead>
+          <tbody id="lk-preview-tbody"></tbody>
         </table>
       </div>
 
@@ -157,7 +138,6 @@
       messagingSenderId: "1051527775983",
       appId: "1:1051527775983:web:ae3794c162184fd56b7d1a"
     };
-    const FUNCTIONS_BASE = "https://us-central1-real-voice-aec71.cloudfunctions.net";
 
     firebase.initializeApp(FIREBASE_CONFIG);
     const auth = firebase.auth();
@@ -165,17 +145,6 @@
 
     let allProfiles = {};
     let allWallets = {};
-    let luckyEnabled = false;
-
-    async function callAdminFn(endpoint, body) {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`${FUNCTIONS_BASE}/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify(body || {})
-      });
-      return res.json();
-    }
 
     document.getElementById("adm-google-btn").onclick = () => {
       auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -200,85 +169,34 @@
       startAdminListeners();
     });
 
+    function esc(v) {
+      return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    const LUCKY_ODDS = [
+      { label: "0×", mult: 0 }, { label: "0.5×", mult: 0.5 }, { label: "1×", mult: 1 },
+      { label: "2×", mult: 2 }, { label: "5×", mult: 5 }, { label: "10×", mult: 10 }
+    ];
+    function renderLuckyPreview() {
+      const price = Math.max(1, Math.floor(Number(document.getElementById("lk-price").value || 100)));
+      document.getElementById("lk-preview-tbody").innerHTML = LUCKY_ODDS.map((o) =>
+        `<tr><td><b>${o.label}</b></td><td>${Math.floor(price * o.mult).toLocaleString("en-US")}</td></tr>`).join("");
+    }
+    document.getElementById("lk-price").oninput = renderLuckyPreview;
+    renderLuckyPreview();
+
     function startAdminListeners() {
       db.ref("publicProfiles").on("value", (s) => { allProfiles = s.val() || {}; renderUsersTable(); });
       db.ref("economy/wallets").on("value", (s) => { allWallets = s.val() || {}; renderUsersTable(); });
-
-      db.ref("app_settings/luckyGiftsEnabled").on("value", (s) => {
-        luckyEnabled = s.val() === true;
-        const badge = document.getElementById("lucky-flag-badge");
-        badge.textContent = luckyEnabled ? "مفعّل حالياً" : "معطّل افتراضياً";
-        badge.className = "pill" + (luckyEnabled ? "" : " off");
-      });
-
-      document.getElementById("toggle-lucky-flag-btn").onclick = async () => {
-        const nextVal = !luckyEnabled;
-        await db.ref("app_settings/luckyGiftsEnabled").set(nextVal);
-        await db.ref(`adminAuditLogs/flag_${Date.now()}`).set({
-          action: "toggleLuckyGifts",
-          oldValue: String(luckyEnabled),
-          newValue: String(nextVal),
-          adminUid: auth.currentUser.uid,
-          createdAt: Date.now()
-        });
-      };
-
-      document.getElementById("seed-lucky-btn").onclick = async () => {
-        const r = await callAdminFn("seedLuckyGiftsCatalog", {});
-        alert(r.ok ? `تمت تهيئة ${r.seeded} هدية بنجاح` : (r.error || "فشل التهيئة"));
-      };
-
-      db.ref("luckyGifts/catalog").on("value", (s) => {
-        const cat = s.val() || {};
-        const rows = Object.values(cat).sort((a, b) => Number(a.sortOrder || 99) - Number(b.sortOrder || 99));
-        document.getElementById("lucky-catalog-tbody").innerHTML = rows.map((g) => `
-          <tr>
-            <td><code>${g.id}</code></td>
-            <td>${g.nameAr}</td>
-            <td>${Number(g.price).toLocaleString("en-US")}</td>
-            <td>${Number(g.recipientReward).toLocaleString("en-US")}</td>
-            <td>${Number(g.maxSenderReward).toLocaleString("en-US")}</td>
-            <td>${g.active !== false ? "✅ نشط" : "⛔ متوقف"}</td>
-          </tr>
-        `).join("");
-      });
-
-      db.ref("luckyGifts/stats").on("value", (s) => {
-        const st = s.val() || {};
-        const txCount = Number(st.totalTransactions || 0);
-        const spent = Number(st.totalCoinsSpent || 0);
-        const sRew = Number(st.totalSenderRewards || 0);
-        const rRew = Number(st.totalRecipientRewards || 0);
-        document.getElementById("st-tx-count").textContent = txCount.toLocaleString("en-US");
-        document.getElementById("st-spent").textContent = spent.toLocaleString("en-US");
-        document.getElementById("st-sender-rew").textContent = sRew.toLocaleString("en-US");
-        document.getElementById("st-rec-rew").textContent = rRew.toLocaleString("en-US");
-        document.getElementById("st-net-sink").textContent = (spent - sRew - rRew).toLocaleString("en-US");
-
-        const counts = st.multiplierCounts || {};
-        const declared = [
-          { label: "0×", pct: "45%" },
-          { label: "0.5×", pct: "20%" },
-          { label: "1×", pct: "20%" },
-          { label: "2×", pct: "10%" },
-          { label: "5×", pct: "4%" },
-          { label: "10×", pct: "1%" }
-        ];
-        document.getElementById("odds-compare-tbody").innerHTML = declared.map((d) => {
-          const c = Number(counts[d.label] || 0);
-          const actualPct = txCount > 0 ? ((c / txCount) * 100).toFixed(2) + "%" : "0.00%";
-          return `<tr><td><b>${d.label}</b></td><td>${d.pct}</td><td>${c}</td><td>${actualPct}</td></tr>`;
-        }).join("");
-      });
 
       db.ref("adminAuditLogs").limitToLast(25).on("value", (s) => {
         const logs = Object.values(s.val() || {}).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
         document.getElementById("audit-tbody").innerHTML = logs.map((l) => `
           <tr>
-            <td>${l.action}</td>
-            <td><code>${l.targetUid || "-"}</code></td>
-            <td>${l.oldValue != null ? `${l.oldValue} ➔ ${l.newValue}` : `${l.delta || 0} (الرصيد: ${l.newBalance || 0})`}</td>
-            <td><code>${l.adminUid || "-"}</code></td>
+            <td>${esc(l.action)}</td>
+            <td><code>${esc(l.targetUid || "-")}</code></td>
+            <td>${l.oldValue != null ? `${esc(l.oldValue)} ➔ ${esc(l.newValue)}` : `${esc(l.delta || 0)} (الرصيد: ${esc(l.newBalance || 0)})`}</td>
+            <td><code>${esc(l.adminUid || "-")}</code></td>
             <td>${new Date(l.createdAt || Date.now()).toLocaleString("ar-EG")}</td>
           </tr>
         `).join("");
@@ -296,44 +214,74 @@
         return {
           uid,
           name: p.name || "مستخدم",
-          specialId: p.specialId || "1000001",
-          balance: Number(w.balance || 0),
-          bonus: Number(w.senderBonusBalance || 0),
-          rec: Number(w.recipientRewardBalance || 0)
+          specialId: String(p.specialId || "1000001"),
+          balance: Number(typeof w === "object" ? (w.balance != null ? w.balance : (w.coins || 0)) : (w || 0))
         };
       }).filter((u) => !q || u.name.toLowerCase().indexOf(q) >= 0 || u.specialId.indexOf(q) >= 0 || u.uid.toLowerCase().indexOf(q) >= 0);
 
+      // لا نعيد بناء الجدول أثناء كتابة المدير داخل حقل
+      if (tbody.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+
       tbody.innerHTML = list.slice(0, 40).map((u) => `
         <tr>
-          <td><b>${u.name}</b><br><small style="color:var(--muted)">${u.uid}</small></td>
-          <td><code>${u.specialId}</code></td>
-          <td>أساسي: <b>${u.balance}</b><br><small>مكافأة: ${u.bonus} | استلام: ${u.rec}</small></td>
+          <td><b>${esc(u.name)}</b><br><small style="color:var(--muted)">${esc(u.uid)}</small></td>
+          <td><code>${esc(u.specialId)}</code></td>
+          <td><b>${u.balance.toLocaleString("en-US")}</b> 🪙</td>
           <td>
             <div class="row-flex">
-              <input id="newid_${u.uid}" maxlength="7" placeholder="7 أرقام" style="width:105px;margin:0" />
-              <button class="btn sm" onclick="changeId('${u.uid}')">تغيير ID</button>
+              <input id="newid_${esc(u.uid)}" maxlength="7" inputmode="numeric" placeholder="7 أرقام" style="width:105px;margin:0" />
+              <button class="btn" type="button" onclick="changeId('${esc(u.uid)}')">تغيير ID</button>
             </div>
           </td>
           <td>
             <div class="row-flex">
-              <input id="coins_${u.uid}" type="number" placeholder="+1000 أو -500" style="width:120px;margin:0" />
-              <button class="btn ok" onclick="sendCoins('${u.uid}')">تنفيذ</button>
+              <input id="coins_${esc(u.uid)}" type="number" min="1" placeholder="المبلغ" style="width:100px;margin:0" />
+              <button class="btn ok" type="button" onclick="sendCoins('${esc(u.uid)}', 1)">منح</button>
+              <button class="btn red" type="button" onclick="sendCoins('${esc(u.uid)}', -1)">خصم</button>
             </div>
           </td>
         </tr>
       `).join("");
     }
 
+    function writeAudit(entry) {
+      return db.ref("adminAuditLogs").push(Object.assign({ adminUid: auth.currentUser.uid, createdAt: Date.now() }, entry));
+    }
+
     window.changeId = async (targetUid) => {
       const val = document.getElementById(`newid_${targetUid}`).value.trim();
-      const r = await callAdminFn("adminManageUser", { action: "changeSpecialId", targetUid, newSpecialId: val });
-      alert(r.ok ? `تم تغيير ID إلى ${r.specialId}` : (r.error || "خطأ"));
+      if (!/^\d{7}$/.test(val)) { alert("ID يجب أن يكون 7 أرقام بالضبط"); return; }
+      const taken = Object.keys(allProfiles).some((u) => u !== targetUid && String((allProfiles[u] || {}).specialId) === val);
+      if (taken) { alert("هذا الـ ID مستخدم بالفعل"); return; }
+      const oldId = String((allProfiles[targetUid] || {}).specialId || "");
+      try {
+        await db.ref().update({
+          [`publicProfiles/${targetUid}/specialId`]: val,
+          [`users/${targetUid}/specialId`]: val
+        });
+        await writeAudit({ action: "changeSpecialId", targetUid, oldValue: oldId, newValue: val });
+        alert(`تم تغيير ID إلى ${val}`);
+      } catch (e) { alert("تعذر التغيير — تحقق من قواعد Firebase (انظر firebase-rules-snippet.json)."); }
     };
 
-    window.sendCoins = async (targetUid) => {
-      const amt = Number(document.getElementById(`coins_${targetUid}`).value || 0);
-      const r = await callAdminFn("adminManageUser", { action: "adjustCoins", targetUid, amount: amt });
-      alert(r.ok ? `تم تحديث الرصيد. الرصيد الجديد: ${r.balance}` : (r.error || "خطأ"));
+    window.sendCoins = async (targetUid, sign) => {
+      const raw = Math.floor(Number(document.getElementById(`coins_${targetUid}`).value || 0));
+      if (!Number.isFinite(raw) || raw <= 0) { alert("اكتب مبلغاً صحيحاً أكبر من صفر"); return; }
+      const delta = raw * sign;
+      try {
+        const res = await db.ref(`economy/wallets/${targetUid}`).transaction((w) => {
+          const cur = (w && typeof w === "object") ? w : { balance: Number(w || 0) };
+          const bal = Number(cur.balance != null ? cur.balance : (cur.coins || 0));
+          const next = bal + delta;
+          if (next < 0) return; // إلغاء: لا يسمح برصيد سالب
+          return Object.assign({}, cur, { balance: next });
+        });
+        if (!res.committed) { alert("لا يمكن الخصم: الرصيد أقل من المبلغ"); return; }
+        const nb = Number(res.snapshot.val().balance);
+        await writeAudit({ action: sign > 0 ? "grantCoins" : "deductCoins", targetUid, delta, newBalance: nb });
+        document.getElementById(`coins_${targetUid}`).value = "";
+        alert(`تم التحديث. الرصيد الجديد: ${nb.toLocaleString("en-US")}`);
+      } catch (e) { alert("تعذر تنفيذ العملية — تحقق من قواعد Firebase (انظر firebase-rules-snippet.json)."); }
     };
   </script>
 </body>
