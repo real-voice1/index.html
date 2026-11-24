@@ -973,6 +973,19 @@
     .emojigrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
     .emojigrid button { font-size: 24px; padding: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
 
+
+    /* صندوق الهدايا — مربعات فارغة */
+    .gb-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+    .gb-slot {
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      border: 1.5px dashed var(--line);
+      background: var(--card-2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 18px; opacity: 0.75;
+    }
+    .gb-note { text-align: center; color: var(--muted); font-size: 12.5px; margin-bottom: 6px; }
+
     /* Gift Projectile & Entry Ribbon */
     .gift-projectile {
       position: fixed;
@@ -1300,7 +1313,6 @@
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <button class="btn sm gold" id="room-wallet-open" type="button">🪙 <span id="room-wallet-balance">0</span></button>
         <button class="icon-btn" id="room-menu" type="button" title="خيارات الغرفة">⋮</button>
         <button class="btn sm red" id="room-leave-top" type="button">خروج</button>
       </div>
@@ -1345,7 +1357,6 @@
       <label class="dock-ic" for="room-chat-img" style="margin:0;cursor:pointer" title="إرسال صورة">📷</label>
       <input id="room-chat-img" type="file" accept="image/*" class="hidden" />
       <button class="dock-ic" id="room-music" type="button" title="موسيقى">🎵</button>
-      <button class="dock-ic" id="room-lucky-quick" type="button" title="هدايا الحظ">🎲</button>
     </div>
 
     <div class="room-dock">
