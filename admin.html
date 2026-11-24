@@ -197,6 +197,24 @@
           <span id="cg-preview" style="font-size:12px;color:var(--muted)"></span>
         </div>
       </div>
+      <div class="card" style="background:var(--panel-2);margin-bottom:14px">
+        <h4 style="margin:0 0 10px">🆔 تغيير ID مستخدم</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px">
+          <div><label>المستخدم الحالي (ID / UID / الاسم)</label><input id="id-user" placeholder="مثال: 1000001" /></div>
+          <div><label>ID الجديد (7 أرقام، من 1000001)</label><input id="id-new" inputmode="numeric" maxlength="7" placeholder="مثال: 7777777" /></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+          <button class="btn gold" id="id-save-btn" type="button">حفظ ID الجديد ✅</button>
+          <span id="id-preview" style="font-size:12px;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div class="card" style="background:var(--panel-2);margin-bottom:14px">
+        <h4 style="margin:0 0 10px">🧰 أدوات سريعة</h4>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ok" id="ar-create-btn" type="button">🏠 إنشاء غرفة لكل مستخدم ليس لديه غرفة</button>
+          <button class="btn gold" id="gf-seed-btn" type="button">🎁 إضافة الهدايا الجديدة للكتالوج</button>
+        </div>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -421,6 +439,32 @@
         tTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
       }
 
+
+      var ADMIN_NEW_GIFTS = [
+        { id: "teddy", e: "🧸", gifUrl: "", n: "دبدوب", p: 60, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "trophy", e: "🏆", gifUrl: "", n: "كأس البطولة", p: 250, isFree: false, isEvent: false, active: true, cat: "popular", vipMin: 0 },
+        { id: "fireworks", e: "🎆", gifUrl: "", n: "ألعاب نارية", p: 400, isFree: false, isEvent: true, active: true, cat: "events", vipMin: 0 },
+        { id: "ring", e: "💍", gifUrl: "", n: "خاتم الماس", p: 700, isFree: false, isEvent: false, active: true, cat: "vip", vipMin: 1 },
+        { id: "dragon", e: "🐉", gifUrl: "", n: "التنين الذهبي", p: 1200, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 2 },
+        { id: "unicorn", e: "🦄", gifUrl: "", n: "يونيكورن سحري", p: 2000, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 2 },
+        { id: "jet", e: "✈️", gifUrl: "", n: "طائرة خاصة", p: 5000, isFree: false, isEvent: true, active: true, cat: "vip", vipMin: 3 }
+      ];
+
+      function changeUserId(uid, raw) {
+        var nid = String(raw || "").trim();
+        if (!uid || !state.profiles[uid]) { toast("المستخدم غير موجود"); return Promise.resolve(false); }
+        if (!/^\d{7}$/.test(nid) || Number(nid) < 1000001) { toast("ID لازم يكون 7 أرقام ويبدأ من 1000001"); return Promise.resolve(false); }
+        var taken = Object.keys(state.profiles).some(function (k) { return k !== uid && String((state.profiles[k] || {}).specialId || "") === nid; });
+        if (taken) { toast("هذا الـ ID مستخدم من حساب آخر"); return Promise.resolve(false); }
+        var ups = {};
+        ups["users/" + uid + "/specialId"] = nid;
+        ups["publicProfiles/" + uid + "/specialId"] = nid;
+        return db.ref().update(ups).then(function () {
+          db.ref("notifications/" + uid).push({ id: "n" + Date.now().toString(36), type: "info", text: "تم تغيير ID حسابك إلى " + nid, t: Date.now(), read: false }).catch(function () { /* */ });
+          toast("تم تغيير ID إلى " + nid + " ✅"); return true;
+        }).catch(function (e) { toast("فشل: " + (e && e.message ? e.message : "الصلاحيات")); return false; });
+      }
+
       function recalcProbTotal() {
         var sum = state.editingRewards.reduce(function (a, r) { return a + Number(r.probability || 0); }, 0);
         var badge = $("lb-prob-total");
@@ -521,6 +565,7 @@
             title: note ? ("إدارة: " + note) : (applied >= 0 ? "منحة من الإدارة" : "خصم من الإدارة"),
             createdAt: Date.now()
           }).catch(function () { /* */ });
+          db.ref("notifications/" + uid).push({ id: "n" + Date.now().toString(36), type: "coins", text: (applied >= 0 ? "وصلتك " : "تم خصم ") + Math.abs(applied).toLocaleString("en-US") + " 🪙 من الإدارة", t: Date.now(), read: false }).catch(function () { /* */ });
           toast((applied >= 0 ? "تمت إضافة " : "تم خصم ") + Math.abs(applied).toLocaleString("en-US") + " 🪙 " + (applied >= 0 ? "إلى " : "من ") + uName + " ✅ (الرصيد الجديد: " + Number(res.snapshot.val() || 0).toLocaleString("en-US") + ")");
           return true;
         }).catch(function (e) { toast("فشل التنفيذ: " + (e && e.message ? e.message : "صلاحيات قاعدة البيانات")); return false; });
@@ -576,6 +621,7 @@
             '<td>' + (u.isAdmin ? '<span class="tag gold">مدير</span>' : '<span class="tag">عضو</span>') + '</td>' +
             '<td style="display:flex;gap:5px;flex-wrap:wrap">' +
               '<button class="btn sm ok" data-add-coins="' + esc(u.id) + '" type="button">💰 كوينزات</button>' +
+            '<button class="btn sm ghost" data-chg-id="' + esc(u.id) + '" type="button">🆔 ID</button>' +
               '<button class="btn sm gold" data-toggle-vip="' + esc(u.id) + '" type="button">VIP+1</button>' +
               '<button class="btn sm ghost" data-toggle-admin="' + esc(u.id) + '" type="button">' + (u.isAdmin ? 'إلغاء إدارة' : 'تعيين مدير') + '</button>' +
             '</td>' +
@@ -589,6 +635,9 @@
             if (v === null) return;
             grantCoins(uid, Number(v), "");
           };
+        });
+        $("adm-users-tbody").querySelectorAll("[data-chg-id]").forEach(function (b) {
+          b.onclick = function () { var uid = b.getAttribute("data-chg-id"); var v = prompt("اكتب ID الجديد (7 أرقام)", ""); if (v === null) return; changeUserId(uid, v); };
         });
         $("adm-users-tbody").querySelectorAll("[data-toggle-vip]").forEach(function (b) {
           b.onclick = function () {
@@ -802,6 +851,40 @@
         var amt = Number($("cg-amount").value);
         btn.disabled = true;
         grantCoins(k, amt, ($("cg-note").value || "").trim()).then(function () { btn.disabled = false; });
+      };
+
+
+      $("id-user").oninput = function () {
+        var k = findUserKey(this.value);
+        $("id-preview").textContent = k ? ("✔ " + ((state.profiles[k] && state.profiles[k].name) || k) + " — ID الحالي: " + ((state.profiles[k] && state.profiles[k].specialId) || "—")) : "لم يتم العثور على المستخدم";
+      };
+      $("id-save-btn").onclick = function () {
+        var btn = this, k = findUserKey($("id-user").value);
+        if (!k) { toast("المستخدم غير موجود — تأكد من الـ ID أو الاسم"); return; }
+        btn.disabled = true;
+        changeUserId(k, $("id-new").value).then(function (ok) { btn.disabled = false; if (ok) { $("id-new").value = ""; } });
+      };
+      $("gf-seed-btn").onclick = function () {
+        if (!state.gifts.length) state.gifts = ADMIN_DEFAULT_GIFTS.map(function (g) { return Object.assign({}, g); });
+        var added = 0;
+        ADMIN_NEW_GIFTS.forEach(function (g) {
+          if (!state.gifts.some(function (x) { return x.id === g.id; })) { state.gifts.push(Object.assign({}, g)); added++; }
+        });
+        db.ref("gifts").set(state.gifts).then(function () { toast(added ? ("تمت إضافة " + added + " هدية جديدة ✅") : "الهدايا الجديدة موجودة مسبقاً"); });
+      };
+      $("ar-create-btn").onclick = function () {
+        var btn = this, ups = {}, n = 0;
+        Object.keys(state.profiles).forEach(function (uid) {
+          var p = state.profiles[uid] || {};
+          if (state.rooms[uid] || !p.name) return;
+          var seats = []; for (var i = 0; i < 9; i++) seats.push({ uid: null, locked: false, muted: false, vip: i === 0 });
+          ups["rooms/" + uid] = { id: uid, name: "غرفة " + p.name, desc: "أهلاً بكم في غرفتي 🎙️", cat: "chat", owner: uid, seatCount: 9, seats: seats, priv: false, locked: false, color: n % 6, icon: n % 6, adminOrder: 1000, created: Date.now() };
+          ups["users/" + uid + "/autoRoomCreated"] = true;
+          n++;
+        });
+        if (!n) { toast("كل المستخدمين لديهم غرف بالفعل"); return; }
+        btn.disabled = true;
+        db.ref().update(ups).then(function () { toast("تم إنشاء " + n + " غرفة ✅"); }).catch(function (e) { toast("فشل: " + (e && e.message ? e.message : "الصلاحيات")); }).then(function () { btn.disabled = false; });
       };
 
       $("gf-save-btn").onclick = function () {
