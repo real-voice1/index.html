@@ -2070,4 +2070,14 @@
     if (!Array.isArray(room.msgs)) room.msgs = [];
     room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: tNow }));
     if (UI.roomId === room.id) renderRoomChat();
-    if (cloud.on && cloud.db && !UI.isGuest) cloud.db.ref("ro
+    // استكمال آمن لنهاية الملف: حفظ آخر 100 رسالة للغرفة عند توفر Firebase.
+    if (cloud.on && cloud.db && !UI.isGuest) {
+      cloud.roomMsgs[room.id] = room.msgs.slice(-100);
+      cloud.db.ref("rooms/" + room.id + "/msgs").set(cloud.roomMsgs[room.id]).catch(function () {
+        /* فشل الحفظ السحابي لا يوقف واجهة الغرفة */
+      });
+    }
+    saveLocal();
+  }
+
+})(typeof window !== "undefined" ? window : globalThis);
