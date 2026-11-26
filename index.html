@@ -1165,7 +1165,55 @@
     .dm-bubble.me { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; }
     .dm-bubble.them { background: var(--card-2); }
     .seat { cursor: pointer; } .seat-orb { position: relative; } .seat-orb.empty { border-style: dashed; opacity: .85; } .seat-mute { position: absolute; bottom: 0; right: 0; font-size: 14px; }
-  </style>
+  
+    /* FIX FINAL: توحيد إطار الصورة في الملف الشخصي ومقاعد الغرف */
+    .avatar.has-profile-frame,
+    .seat-orb.has-profile-frame {
+      position: relative !important;
+      overflow: visible !important;
+      isolation: isolate;
+    }
+    .avatar.has-profile-frame > .avatar-photo,
+    .seat-orb.has-profile-frame > .avatar-photo {
+      position: relative !important;
+      z-index: 1 !important;
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border-radius: 50% !important;
+    }
+    .avatar.has-profile-frame > .profile-frame-overlay,
+    .seat-orb.has-profile-frame > .profile-frame-overlay {
+      position: absolute !important;
+      left: 50% !important;
+      top: 50% !important;
+      right: auto !important;
+      bottom: auto !important;
+      width: 154% !important;
+      height: 154% !important;
+      max-width: none !important;
+      max-height: none !important;
+      transform: translate(-50%, -50%) !important;
+      object-fit: fill !important;
+      z-index: 5 !important;
+      display: block !important;
+      pointer-events: none !important;
+    }
+    .seat-orb.has-profile-frame {
+      border-color: transparent !important;
+      background: transparent !important;
+    }
+    #pf-avatar.avatar.lg.has-profile-frame,
+    .seat-orb.has-profile-frame {
+      width: 68px !important;
+      height: 68px !important;
+      min-width: 68px !important;
+      min-height: 68px !important;
+      border-radius: 50% !important;
+    }
+
+</style>
   <script>
     /* حماية: لو script.js ما اشتغلش خلال 7 ثواني نعرض السبب بدل التحميل اللانهائي */
     window.__rvErr = "";
