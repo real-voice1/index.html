@@ -2070,14 +2070,4 @@
     if (!Array.isArray(room.msgs)) room.msgs = [];
     room.msgs.push(Object.assign({ key: uid() }, msgObj, { t: tNow }));
     if (UI.roomId === room.id) renderRoomChat();
-    // Safe completion of the truncated upload: persist the latest 100 room messages.
-    if (cloud.on && cloud.db && !UI.isGuest) {
-      cloud.roomMsgs[room.id] = room.msgs.slice(-100);
-      cloud.db.ref("rooms/" + room.id + "/msgs").set(cloud.roomMsgs[room.id]).catch(function () {
-        /* A cloud write failure must not break the room UI. */
-      });
-    }
-    saveLocal();
-  }
-
-})(typeof window !== "undefined" ? window : globalThis);
+    // Safe completion of the truncated upload: persist the l
