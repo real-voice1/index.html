@@ -1139,11 +1139,29 @@
     .dm-bubble.them { background: var(--card-2); }
     .seat { cursor: pointer; } .seat-orb { position: relative; } .seat-orb.empty { border-style: dashed; opacity: .85; } .seat-mute { position: absolute; bottom: 0; right: 0; font-size: 14px; }
   </style>
+  <script>
+    /* حماية: لو script.js ما اشتغلش خلال 7 ثواني نعرض السبب بدل التحميل اللانهائي */
+    window.__rvErr = "";
+    window.addEventListener("error", function (e) {
+      window.__rvErr += (e.message || "خطأ") + " @" + String(e.filename || "").split("/").pop() + ":" + (e.lineno || 0) + "\n";
+    });
+    setTimeout(function () {
+      if (window.__RV_BOOTED) return;
+      var sp = document.getElementById("splash-screen");
+      if (!sp) return;
+      sp.innerHTML = '<div style="max-width:340px;padding:20px;text-align:center;color:#fff;line-height:1.8">' +
+        '<div style="font-size:42px">⚠️</div><b>تعذر تشغيل التطبيق</b>' +
+        '<p style="font-size:13px;color:#cbd5e1">ملف <b>script.js</b> لم يتحمل أو هو نسخة قديمة. ارفع النسخة الجديدة بجانب index.html بنفس الاسم، ثم افتح الموقع بعد مسح الكاش.</p>' +
+        '<pre style="direction:ltr;text-align:left;white-space:pre-wrap;font-size:11px;background:#1e293b;border-radius:10px;padding:8px;color:#fca5a5">' +
+        (window.__rvErr || "لا توجد أخطاء مسجلة — غالباً script.js غير موجود في نفس المجلد") + '</pre>' +
+        '<button onclick="location.reload()" style="padding:10px 18px;border:0;border-radius:12px;background:#8b5cf6;color:#fff;font-weight:800">إعادة المحاولة</button></div>';
+    }, 7000);
+  </script>
 </head>
 <body>
   <div id="splash-screen">
     <div class="splash-logo">🎙️</div>
-    <div class="splash-title app-brand-label">REAL VOICE</div><div style="font-size:11px;color:#64748b">الإصدار 27</div>
+    <div class="splash-title app-brand-label">REAL VOICE</div><div style="font-size:11px;color:#64748b">الإصدار 30</div>
     <div class="splash-spinner"></div>
   </div>
 
@@ -1486,6 +1504,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.0.js"></script>
-  <script src="./script.js?v=29"></script>
+  <script src="./script.js?v=30"></script>
 </body>
 </html>
