@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق القرآن الكريم</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>القرآن الكريم</h1>
+            <p>استمع وتدبر آيات الله</p>
+        </header>
+
+        <div class="player-card">
+            <h2 id="current-surah">اختر سورة</h2>
+            <p id="reciter-name">القارئ: مشاري العفاسي</p>
+            <audio id="main-audio" controls src=""></audio>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="ابحث عن سورة...">
+        </div>
+
+        <div class="surah-list" id="surahList">
+            </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أذكار الصباح والمساء</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(to bottom, #1e3c72, #2a5298);
+        color: #fff;
+        text-align: center;
+        padding: 50px 20px;
+    }
+
+    h1 {
+        font-size: 2.5em;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px #000;
+    }
+
+    .buttons {
+        margin-bottom: 30px;
+    }
+
+    button {
+        background-color: #ff9800;
+        border: none;
+        padding: 10px 25px;
+        margin: 5px;
+        font-size: 1.1em;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background-color: #e68900;
+    }
+
+    .zikr {
+        background: rgba(0,0,0,0.3);
+        padding: 20px;
+        border-radius: 15px;
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.8;
+        font-size: 1.2em;
+    }
+
+    .count {
+        margin-top: 15px;
+        font-size: 1em;
+        color: #ffd700;
+    }
+</style>
+</head>
+<body>
+
+<h1>أذكار الصباح والمساء</h1>
+
+<div class="buttons">
+    <button onclick="showZikr('morning')">أذكار الصباح</button>
+    <button onclick="showZikr('evening')">أذكار المساء</button>
+</div>
+
+<div class="zikr" id="zikr">
+    اضغط على أي زر لعرض الأذكار
+</div>
+
+<div class="count" id="count"></div>
+
+<script>
+const morningZikr = [
+    "أصبحنا وأصبح الملك لله...",
+    "اللهم بك أصبحنا وبك أمسينا...",
+    "اللهم إني أسألك خير هذا اليوم...",
+    "سبحان الله وبحمده...",
+    "أستغفر الله الذي لا إله إلا هو الحي القيوم وأتوب إليه..."
+];
+
+const eveningZikr = [
+    "أمسينا وأمسى الملك لله...",
+    "اللهم بك أمسينا وبك أصبحنا...",
+    "اللهم إني أسألك خير هذه الليلة...",
+    "سبحان الله وبحمده...",
+    "أستغفر الله الذي لا إله إلا هو الحي القيوم وأتوب إليه..."
+];
+
+let currentIndex = 0;
+let currentList = [];
+
+function showZikr(type) {
+    currentIndex = 0;
+    currentList = type === 'morning' ? morningZikr : eveningZikr;
+    displayZikr();
+}
+
+function displayZikr() {
+    if(currentIndex < currentList.length){
+        document.getElementById('zikr').innerText = currentList[currentIndex];
+        document.getElementById('count').innerText = `الذكر رقم: ${currentIndex + 1} / ${currentList.length}`;
+        currentIndex++;
+    } else {
+        document.getElementById('zikr').innerText = "انتهت جميع الأذكار!";
+        document.getElementById('count').innerText = "";
+    }
+}
+
+// للتنقل بين الأذكار بالضغط على الزكر نفسه
+document.getElementById('zikr').addEventListener('click', displayZikr);
+</script>
+
+</body>
+</html><div class="tabs">
+    <button class="tab-btn active" onclick="showSection('quran')">القرآن</button>
+    <button class="tab-btn" onclick="showSection('azkar')">الأذكار</button>
+    <button class="tab-btn" onclick="showSection('tasbih')">المسبحة</button>
+</div>
+
+<div id="tasbih-section" style="display: none; text-align: center;">
+    <div class="tasbih-card">
+        <h3 id="tasbih-text">سبحان الله</h3>
+        <div class="counter-display" id="counter">0</div>
+        <button class="tap-area" onclick="incrementCounter()">اضغط للتسبيح</button>
+        <div class="tasbih-controls">
+            <button onclick="resetCounter()" class="reset-btn">إعادة ضبط</button>
+            <button onclick="changeTasbih()" class="change-btn">تغيير الذكر</button>
+        </div>
+    </div>
+</div>
+<button class="tab-btn" onclick="showSection('features')">فضائل</button>
+
+<div id="features-section" style="display: none;">
+    <div class="features-grid" id="featuresGrid">
+        </div>
+</div>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1e5e44">
+<button class="tab-btn" onclick="showSection('stories')">قصص الأنبياء</button>
+
+<div id="stories-section" style="display: none;">
+    <div class="search-bar">
+        <input type="text" id="storySearch" placeholder="ابحث عن قصة نبي..." oninput="filterStories()">
+    </div>
+    <div id="storiesGrid" class="surah-list">
+        </div>
+</div>
