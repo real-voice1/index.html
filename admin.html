@@ -88,6 +88,21 @@ code{color:#c4b5fd}.mut{color:var(--mut);font-size:12px}
       </div>
     </section>
 
+    <section data-sec="frames" class="hidden">
+      <div class="card"><h2>👑 إطارات الصور الشخصية</h2>
+        <p class="mut">ارفع ملف GIF أو PNG للإطار، ثم اختر المستخدم وحدد مدة الهدية. الإطار مجاني ويظهر حول صورته بعد الإرسال.</p>
+        <label>ملف الإطار (GIF / PNG)<input id="fr-file" type="file" accept="image/gif,image/png" /></label>
+        <label>اسم الإطار<input id="fr-name" value="التاج الملكي" /></label>
+        <div class="row"><label class="grow">المستلم<select id="fr-user"><option value="">اختر المستخدم</option></select></label>
+          <label style="width:150px">المدة<select id="fr-duration"><option value="604800000">7 أيام</option><option value="2592000000">30 يوم</option><option value="86400000">يوم واحد</option><option value="0">بدون انتهاء</option><option value="custom">تحديد بالساعات</option></select></label>
+          <label id="fr-custom-wrap" style="width:120px;display:none">عدد الساعات<input id="fr-hours" type="number" min="1" value="24"></label>
+        </div>
+        <button class="btn ok" id="fr-send" type="button">🎁 رفع وإرسال الإطار</button>
+        <div id="fr-status" class="mut" style="margin-top:8px"></div>
+      </div>
+      <div class="card"><h3>الإطارات المرسلة</h3><div class="scroll"><table><thead><tr><th>المستخدم</th><th>الإطار</th><th>الصلاحية</th><th></th></tr></thead><tbody id="fr-body"></tbody></table></div></div>
+    </section>
+
     <section data-sec="cup" class="hidden"><div class="card">
       <div class="row" style="justify-content:space-between"><h2 style="margin:0">🏆 كاس الغرف (كل الغرف)</h2>
         <div class="row"><button class="btn ghost sm" id="cup-refresh" type="button">🔄 تحديث</button><button class="btn bad sm" id="cup-reset" type="button">تصفير الكاس بالكامل</button></div></div>
@@ -139,18 +154,19 @@ code{color:#c4b5fd}.mut{color:var(--mut);font-size:12px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
 firebase.initializeApp({apiKey:"AIzaSyDyx4MBxvRM0L5FrrjVOfVePlKRSxGpMg4",authDomain:"real-voice-aec71.firebaseapp.com",databaseURL:"https://real-voice-aec71-default-rtdb.firebaseio.com",projectId:"real-voice-aec71",storageBucket:"real-voice-aec71.firebasestorage.app",messagingSenderId:"1051527775983",appId:"1:1051527775983:web:ae3794c162184fd56b7d1a"});
 const auth=firebase.auth(), db=firebase.database();
 const $=id=>document.getElementById(id);
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const num=n=>Number(n||0).toLocaleString("en-US");
-let P={},W={},R={},G={},B=[],RP={},SET={},editId=null;
+let P={},W={},R={},G={},B=[],RP={},SET={},editId=null,FR={};
 function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",3200)}
 const audit=e=>db.ref("adminAuditLogs").push(Object.assign({adminUid:auth.currentUser.uid,createdAt:Date.now()},e));
 async function run(fn){try{await fn()}catch(e){toast("تعذر التنفيذ — تحقق من قواعد Firebase")}}
 
-const SECS=[["dash","📊 نظرة عامة"],["users","👥 المستخدمون"],["rooms","🎙️ الغرف"],["gifts","🎁 الهدايا"],["cup","🏆 الكاس"],["lucky","🎲 هدايا الحظ"],["banners","🖼️ البنرات"],["settings","⚙️ الإعدادات"],["reports","🚩 البلاغات"],["audit","📜 السجل"]];
+const SECS=[["dash","📊 نظرة عامة"],["users","👥 المستخدمون"],["rooms","🎙️ الغرف"],["gifts","🎁 الهدايا"],["frames","👑 الإطارات"],["cup","🏆 الكاس"],["lucky","🎲 هدايا الحظ"],["banners","🖼️ البنرات"],["settings","⚙️ الإعدادات"],["reports","🚩 البلاغات"],["audit","📜 السجل"]];
 $("nav").innerHTML=SECS.map(s=>`<button data-go="${s[0]}">${s[1]}</button>`).join("");
 function go(k){document.querySelectorAll("[data-sec]").forEach(e=>e.classList.toggle("hidden",e.dataset.sec!==k));document.querySelectorAll("[data-go]").forEach(b=>b.classList.toggle("on",b.dataset.go===k));if(k==="cup")loadCup()}
 $("nav").onclick=e=>{const b=e.target.closest("[data-go]");if(b)go(b.dataset.go)};go("dash");
@@ -172,6 +188,8 @@ function start(){
   on("economy/wallets",v=>{W=v||{};users();stats()});
   on("rooms",v=>{R=v||{};rooms();stats()});
   on("gifts",v=>{G=v||{};gifts();stats()});
+  on("profileFrames/catalog",v=>{FR=v||{};frameUsers();frameRows()});
+  on("users",v=>{frameRows()});
   on("banners",v=>{B=Array.isArray(v)?v.filter(Boolean):Object.values(v||{});banners()});
   on("app_settings",v=>{SET=v||{};fillSettings()});
   on("reports",v=>{RP=v||{};reports();stats()});
@@ -256,6 +274,39 @@ $("g-body").onclick=e=>{
   if(ed){const g=G[ed.dataset.ge]||{};editId=ed.dataset.ge;$("g-name").value=g.name||g.n||"";$("g-emoji").value=g.emoji||g.e||"";$("g-price").value=g.price!=null?g.price:g.p;$("g-img").value=g.image||g.gifUrl||"";$("g-order").value=g.order||0;$("g-active").checked=g.active!==false;$("g-title").textContent="✏️ تعديل هدية";scrollTo({top:0,behavior:"smooth"})}
   if(de&&confirm("حذف الهدية؟"))run(async()=>{await db.ref("gifts/"+de.dataset.gd).remove();await audit({action:"deleteGift",target:de.dataset.gd});toast("تم الحذف")});
 };
+
+function frameUsers(){
+  const sel=$("fr-user"); if(!sel)return; const old=sel.value;
+  const ids=Object.keys(P||{}).sort((a,b)=>String((P[a]||{}).name||"").localeCompare(String((P[b]||{}).name||"")));
+  sel.innerHTML='<option value="">اختر المستخدم</option>'+ids.map(id=>'<option value="'+esc(id)+'">'+esc((P[id]||{}).name||"مستخدم")+' — '+esc((P[id]||{}).specialId||id)+'</option>').join("");
+  if(ids.includes(old))sel.value=old;
+}
+$("fr-duration").onchange=()=>$("fr-custom-wrap").style.display=$("fr-duration").value==="custom"?"block":"none";
+$("fr-send").onclick=()=>run(async()=>{
+  const file=$("fr-file").files[0], uid=$("fr-user").value, name=$("fr-name").value.trim()||"إطار ملكي";
+  if(!file||!uid)return toast("اختر ملف الإطار والمستخدم أولاً");
+  if(!/^image\/(gif|png)$/.test(file.type))return toast("الصيغة المسموحة GIF أو PNG");
+  if(file.size>5*1024*1024)return toast("حجم الملف يجب ألا يتجاوز 5 ميجابايت");
+  const dur=$("fr-duration").value, ms=dur==="custom"?Math.max(1,Number($("fr-hours").value||0))*3600000:Number(dur);
+  if(dur==="custom"&&!(ms>0))return toast("حدد عدد ساعات صحيح");
+  $("fr-status").textContent="جاري رفع الإطار...";
+  const id=db.ref("profileFrames/catalog").push().key;
+  const ref=firebase.storage().ref("profile-frames/"+id+"_"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_"));
+  await ref.put(file,{contentType:file.type}); const imageUrl=await ref.getDownloadURL();
+  const expiresAt=ms?Date.now()+ms:0, data={id,name,imageUrl,createdAt:Date.now(),active:true};
+  await db.ref("profileFrames/catalog/"+id).set(data);
+  const grant={id,name,imageUrl,grantedAt:Date.now(),expiresAt};
+  await db.ref("users/"+uid+"/profileFrames/"+id).set(grant);
+  await db.ref("publicProfiles/"+uid+"/activeProfileFrame").set({id,name,imageUrl,expiresAt});
+  await audit({action:"grantProfileFrame",targetUid:uid,note:name+" — "+(expiresAt?new Date(expiresAt).toLocaleString("ar-EG"):"بدون انتهاء")});
+  $("fr-status").textContent="تم إرسال الإطار بنجاح";$("fr-file").value="";frameRows();toast("تم إرسال الإطار للمستخدم 🎁");
+});
+function frameRows(){
+ const tb=$("fr-body");if(!tb)return;let rows=[];
+ Object.keys(P||{}).forEach(uid=>{const p=P[uid]||{};const f=p.activeProfileFrame;if(f&&f.id)rows.push({uid,name:p.name||uid,frame:f});});
+ tb.innerHTML=rows.map(r=>'<tr><td>'+esc(r.name)+'<div class="mut">'+esc(r.uid)+'</div></td><td>'+esc(r.frame.name||"إطار")+'</td><td>'+(r.frame.expiresAt?esc(new Date(Number(r.frame.expiresAt)).toLocaleString("ar-EG")):"بدون انتهاء")+'</td><td><button class="btn bad sm" data-fr-revoke="'+esc(r.uid)+'" data-fr-id="'+esc(r.frame.id)+'">سحب</button></td></tr>').join("")||'<tr><td colspan="4" class="mut">لا توجد إطارات مفعّلة حالياً</td></tr>';
+}
+$("fr-body").onclick=e=>{const b=e.target.closest("[data-fr-revoke]");if(!b)return;const uid=b.dataset.frRevoke,id=b.dataset.frId;if(!confirm("سحب الإطار من هذا المستخدم؟"))return;run(async()=>{await db.ref("users/"+uid+"/profileFrames/"+id).remove();const a=db.ref("publicProfiles/"+uid+"/activeProfileFrame");const snap=await a.once("value");if((snap.val()||{}).id===id)await a.remove();await audit({action:"revokeProfileFrame",targetUid:uid,note:id});toast("تم سحب الإطار");frameRows()})};
 
 async function loadCup(){
   const tb=$("c-body");tb.innerHTML=`<tr><td colspan="4" class="mut">جاري التحميل...</td></tr>`;
